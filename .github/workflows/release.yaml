@@ -1,30 +1,41 @@
-name: Release
+name: Draft Release
 
 on:
   push:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
-  publish:
+  build-and-draft:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install uv
         run: pip install uv
 
-      - name: Install deps
+      - name: Sync dependencies
         run: uv sync
 
-      - name: Run tests (optional but recommended)
+      - name: Run tests
         run: uv run pytest || true
 
-      - name: Build
+      - name: Build package
         run: uv build
 
-      - name: Publish to PyPI
+      - name: Create Draft GitHub Release
         env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: uv publish
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --draft \
+            --generate-notes \
+            dist/*
