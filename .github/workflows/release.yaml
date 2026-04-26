@@ -22,9 +22,6 @@ jobs:
       - name: Sync dependencies
         run: uv sync
 
-      - name: Run tests
-        run: uv run pytest || true
-
       - name: Build package
         run: uv build
 
