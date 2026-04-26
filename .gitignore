@@ -12,3 +12,5 @@ wheels/
 .env
 .claude
 .pytest_cache
+
+swagger.yaml

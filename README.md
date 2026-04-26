@@ -15,13 +15,7 @@ A typed Python SDK for the **3CX XAPI** (`/xapi/v1`), built on [httpx](https://w
 ## Installation
 
 ```bash
-pip install threecx-sdk
-```
-
-Or directly from source:
-
-```bash
-pip install .
+pip install 3cx-xapi-python-sdk
 ```
 
 ## Quick start
