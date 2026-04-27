@@ -54,6 +54,6 @@ def _extract_message(body: Any) -> str:
     if isinstance(body, dict):
         err = body.get("error", body)
         if isinstance(err, dict):
-            return err.get("message", str(body))
+            return str(err.get("message", str(body)))
         return str(err)
     return str(body)

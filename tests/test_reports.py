@@ -37,7 +37,10 @@ def test_fmt_dt_formats_correctly() -> None:
 def test_get_call_log(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     expected_path = (
         f"/ReportCallLogData/Pbx.GetCallLogData("
-        f"periodFrom={START_STR},periodTo={END_STR})"
+        f"periodFrom={START_STR},periodTo={END_STR},"
+        f"sourceType=0,sourceFilter='',destinationType=0,destinationFilter='',"
+        f"callsType=0,callTimeFilterType=0,"
+        f"callTimeFilterFrom={START_STR},callTimeFilterTo={END_STR},hidePcalls=false)"
     )
     httpx_mock.add_response(
         url=API_BASE + expected_path,
@@ -51,7 +54,10 @@ def test_get_call_log(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
 def test_get_call_log_empty(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     expected_path = (
         f"/ReportCallLogData/Pbx.GetCallLogData("
-        f"periodFrom={START_STR},periodTo={END_STR})"
+        f"periodFrom={START_STR},periodTo={END_STR},"
+        f"sourceType=0,sourceFilter='',destinationType=0,destinationFilter='',"
+        f"callsType=0,callTimeFilterType=0,"
+        f"callTimeFilterFrom={START_STR},callTimeFilterTo={END_STR},hidePcalls=false)"
     )
     httpx_mock.add_response(url=API_BASE + expected_path, json={"value": []})
     rows = client.reports.get_call_log(START, END)
@@ -62,8 +68,9 @@ def test_get_call_log_empty(client: ThreeCXClient, httpx_mock: HTTPXMock) -> Non
 
 def test_get_extension_statistics(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     path = (
-        f"/ReportExtensionStatistics/Pbx.GetExtensionStatistics("
-        f"periodFrom={START_STR},periodTo={END_STR})"
+        f"/ReportExtensionStatistics/Pbx.GetExtensionStatisticsData("
+        f"periodFrom={START_STR},periodTo={END_STR},"
+        f"extensionFilter='',callArea=0)"
     )
     httpx_mock.add_response(
         url=API_BASE + path,
@@ -77,8 +84,9 @@ def test_get_extension_statistics(client: ThreeCXClient, httpx_mock: HTTPXMock) 
 
 def test_get_queue_performance_overview(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     path = (
-        f"/ReportQueuePerformanceOverview/Pbx.GetQueuePerformanceOverview("
-        f"periodFrom={START_STR},periodTo={END_STR})"
+        f"/ReportQueuePerformanceOverview/Pbx.GetQueuePerformanceOverviewData("
+        f"periodFrom={START_STR},periodTo={END_STR},"
+        f"queueDns='',waitInterval=0)"
     )
     httpx_mock.add_response(
         url=API_BASE + path,
@@ -92,8 +100,9 @@ def test_get_queue_performance_overview(client: ThreeCXClient, httpx_mock: HTTPX
 
 def test_get_agent_login_history(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     path = (
-        f"/ReportAgentLoginHistory/Pbx.GetAgentLoginHistory("
-        f"periodFrom={START_STR},periodTo={END_STR})"
+        f"/ReportAgentLoginHistory/Pbx.GetAgentLoginHistoryData("
+        f"clientTimeZone='UTC',startDt={START_STR},endDt={END_STR},"
+        f"queueDnStr='',agentDnStr='')"
     )
     httpx_mock.add_response(
         url=API_BASE + path,
@@ -155,8 +164,9 @@ def test_purge_activity_logs(client: ThreeCXClient, httpx_mock: HTTPXMock) -> No
 
 def test_get_abandoned_queue_calls(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     path = (
-        f"/ReportAbandonedQueueCalls/Pbx.GetAbandonedQueueCalls("
-        f"periodFrom={START_STR},periodTo={END_STR})"
+        f"/ReportAbandonedQueueCalls/Pbx.GetAbandonedQueueCallsData("
+        f"periodFrom={START_STR},periodTo={END_STR},"
+        f"queueDns='',waitInterval=0)"
     )
     httpx_mock.add_response(
         url=API_BASE + path,

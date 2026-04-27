@@ -78,6 +78,6 @@ def test_list_sbcs(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
 
 
 def test_get_sbc(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=api("/Sbcs(1)"), json=SBC_1)
-    sbc = client.trunks.get_sbc(1)
+    httpx_mock.add_response(url=api("/Sbcs('SBC Edge')"), json=SBC_1)
+    sbc = client.trunks.get_sbc("SBC Edge")
     assert sbc.host == "10.0.0.1"

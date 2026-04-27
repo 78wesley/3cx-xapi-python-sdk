@@ -81,4 +81,4 @@ def test_post_raw(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
         status_code=204,
     )
     result = client.system.post_raw("/Backups/Pbx.CreateBackup")
-    assert result is None
+    assert not result

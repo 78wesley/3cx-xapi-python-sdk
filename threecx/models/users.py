@@ -1,17 +1,20 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from pydantic import Field
 
 from .base import _Base
 
 
-class Group(_Base):
-    """A user group reference (Pbx.UserGroup)."""
+class UserGroupRef(_Base):
+    """A user group reference (Pbx.UserGroup) — lightweight Id+Name pair."""
 
     id: Optional[int] = Field(None, alias="Id")
     name: Optional[str] = Field(None, alias="Name")
+
+
+Group = UserGroupRef
 
 
 class ForwardingProfile(_Base):
@@ -46,7 +49,7 @@ class User(_Base):
     is_registered: Optional[bool] = Field(None, alias="IsRegistered")
     status: Optional[str] = Field(None, alias="PresenceStatus")
     web_meeting_friendly_name: Optional[str] = Field(None, alias="WebMeetingFriendlyName")
-    groups: Optional[List[Group]] = Field(None, alias="Groups")
+    groups: Optional[List[UserGroupRef]] = Field(None, alias="Groups")
     forwarding_profiles: Optional[List[ForwardingProfile]] = Field(None, alias="ForwardingProfiles")
     greetings: Optional[List[Greeting]] = Field(None, alias="Greetings")
     out_of_office_message: Optional[str] = Field(None, alias="OutOfOfficeMessage")

@@ -69,7 +69,7 @@ def test_escape_hatch_post(c: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
         status_code=204,
     )
     result = c.post("/Backups/Pbx.CreateBackup")
-    assert result is None
+    assert not result
 
 
 def test_invalidate_token(c: ThreeCXClient) -> None:

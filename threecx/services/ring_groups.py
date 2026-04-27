@@ -48,5 +48,17 @@ class RingGroupsService(BaseService):
         )
         self._patch(f"{self._PATH}({group_id})", json=payload)
 
+    def get_by_number(self, number: str, query: Optional[ODataQuery] = None) -> RingGroup:
+        data = self._get(f"{self._PATH}(Number='{number}')", params=self._query_params(query))
+        return RingGroup.model_validate(data)
+
     def delete(self, group_id: int, etag: Optional[str] = None) -> None:
         self._delete(f"{self._PATH}({group_id})", etag=etag)
+
+    def get_members(self, group_id: int, query: Optional[ODataQuery] = None) -> List[RingGroupMember]:
+        data = self._get(f"{self._PATH}({group_id})/Members", params=self._query_params(query))
+        return [RingGroupMember.model_validate(item) for item in data.get("value", [])]
+
+    def get_first_available_number(self) -> str:
+        data = self._get(f"{self._PATH}/Pbx.GetFirstAvailableRingGroupNumber()")
+        return str(data.get("value", ""))

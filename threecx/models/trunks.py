@@ -41,3 +41,12 @@ class Sbc(_Base):
     host: Optional[str] = Field(None, alias="Host")
     port: Optional[int] = Field(None, alias="Port")
     enabled: Optional[bool] = Field(None, alias="Enabled")
+
+
+class TrunkTemplate(_Base):
+    """Represents a trunk provisioning template (Pbx.TrunkTemplate)."""
+
+    id: Optional[int] = Field(None, alias="Id")
+    name: Optional[str] = Field(None, alias="Name")
+    country: Optional[str] = Field(None, alias="Country")
+    template: Optional[str] = Field(None, alias="Template")

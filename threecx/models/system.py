@@ -49,3 +49,11 @@ class SystemParameters(_Base):
     tunnel_port: Optional[int] = Field(None, alias="TunnelPort")
     local_ip_address: Optional[str] = Field(None, alias="LocalIpAddress")
     supported_timezones: Optional[List[Any]] = Field(None, alias="SupportedTimezones")
+
+
+class Parameter(_Base):
+    """Represents a named PBX parameter (Pbx.Parameter)."""
+
+    id: Optional[int] = Field(None, alias="Id")
+    name: Optional[str] = Field(None, alias="Name")
+    value: Optional[str] = Field(None, alias="Value")

@@ -65,3 +65,7 @@ class QueuesService(BaseService):
 
     def reset_statistics(self, queue_id: int) -> None:
         self._post(f"{self._PATH}({queue_id})/Pbx.ResetQueueStatistics")
+
+    def get_first_available_number(self) -> str:
+        data = self._get(f"{self._PATH}/Pbx.GetFirstAvailableQueueNumber()")
+        return str(data.get("value", ""))

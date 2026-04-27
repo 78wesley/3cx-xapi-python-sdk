@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from ..models.calls import CallHistoryEntry
 from ..odata import ODataQuery
@@ -29,4 +29,8 @@ class CallHistoryService(BaseService):
         """Return the total number of call history records matching *query*."""
         q = (query or ODataQuery()).count().top(0)
         data = self._list_raw(self._PATH, q)
-        return data.get("@odata.count", 0)
+        return int(data.get("@odata.count", 0))
+
+    def download(self, query: Optional[ODataQuery] = None) -> List[Dict[str, Any]]:
+        data = self._get(f"{self._PATH}/Pbx.DownloadCallHistory()", params=self._query_params(query))
+        return self._list_values(data) if isinstance(data, dict) else data

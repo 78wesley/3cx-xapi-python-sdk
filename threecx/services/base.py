@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import Any, Dict, Iterator, List, Optional, Type, TypeVar
 
 import httpx
+from pydantic import BaseModel
 
 from ..exceptions import raise_for_status
 from ..odata import ODataQuery
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 _SENTINEL = object()
 
@@ -22,23 +23,28 @@ class BaseService:
     # Low-level request helpers
     # ------------------------------------------------------------------
 
-    def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         response = self._http.get(path, params=params)
         self._raise(response)
         if response.status_code == 204:
-            return None
-        return response.json()
+            return {}
+        return response.json()  # type: ignore[no-any-return]
 
-    def _post(self, path: str, json: Any = None, params: Optional[Dict[str, Any]] = None) -> Any:
+    def _post(self, path: str, json: Any = None, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         response = self._http.post(path, json=json, params=params)
         self._raise(response)
         if response.status_code == 204:
-            return None
-        return response.json()
+            return {}
+        return response.json()  # type: ignore[no-any-return]
 
     def _patch(self, path: str, json: Any) -> None:
         response = self._http.patch(path, json=json)
         self._raise(response)
+
+    def _get_bytes(self, path: str, params: Optional[Dict[str, Any]] = None) -> bytes:
+        response = self._http.get(path, params=params)
+        self._raise(response)
+        return response.content
 
     def _delete(self, path: str, etag: Optional[str] = None) -> None:
         headers = {"If-Match": etag} if etag else {}
@@ -65,6 +71,11 @@ class BaseService:
     def _list_raw(self, path: str, query: Optional[ODataQuery] = None) -> Dict[str, Any]:
         return self._get(path, params=self._query_params(query))
 
+    @staticmethod
+    def _list_values(data: Dict[str, Any], key: str = "value") -> List[Dict[str, Any]]:
+        result: List[Dict[str, Any]] = data.get(key, [])
+        return result
+
     def _paginate(
         self,
         path: str,
@@ -73,11 +84,10 @@ class BaseService:
     ) -> Iterator[T]:
         """Yield all items across OData pages."""
         params: Optional[Dict[str, Any]] = self._query_params(query) or None
-        while path:
-            data = self._get(path, params=params)
+        current: Optional[str] = path
+        while current:
+            data = self._get(current, params=params)
             for item in data.get("value", []):
                 yield model.model_validate(item)
-            path = data.get("@odata.nextLink")
-            # nextLink is a full URL with query string already embedded;
-            # passing params={} to httpx strips the query string, so use None.
+            current = data.get("@odata.nextLink")
             params = None
