@@ -7,10 +7,10 @@ A typed Python SDK for the **3CX XAPI** (`/xapi/v1`), built on [httpx](https://w
 - **OAuth2 client-credentials** authentication with automatic token refresh
 - **OData v4** query builder (`$filter`, `$select`, `$expand`, `$orderby`, `$top`, `$skip`, `$count`)
 - Automatic **pagination** — iterate over all pages with a single generator call
-- Full **CRUD** for users, queues, ring groups, trunks, contacts, and phones
+- **Full coverage** — 37 typed services covering every resource group in the 3CX XAPI swagger spec
 - Reporting helpers for call log, queue performance, extension statistics, activity log, and more
 - **Context-manager** support for clean resource management
-- Escape hatches (`client.get()` / `client.post()`) for any unlisted endpoint
+- Escape hatches (`client.get()` / `client.post()`) for raw access to any endpoint
 
 ## Installation
 
@@ -110,18 +110,76 @@ All query parameters map directly to OData v4 syntax. Refer to the [3CX XAPI swa
 
 ## Services reference
 
+The SDK exposes **37 services** as attributes of `ThreeCXClient`, covering every resource group in `swagger.yaml`.
+
+### Calls & telephony
 | `client.<service>` | Resource |
 |---|---|
 | `active_calls` | `/ActiveCalls` — list & drop live calls |
-| `users` | `/Users` — CRUD extensions/users |
+| `call_history` | `/CallHistoryView` — paginated call log |
+| `recordings` | `/Recordings`, `/RemoteArchivingSettings` |
+| `voicemail` | `/VoicemailSettings`, `/MusicOnHoldSettings` |
+| `fax` | `/Fax`, `/FaxServerSettings` |
+
+### Users, groups & directories
+| `client.<service>` | Resource |
+|---|---|
+| `users` | `/Users` — CRUD extensions/users + greetings, phones, provisioning |
+| `my_user` | `/MyUser` — current authenticated user |
+| `groups` | `/Groups` — full admin groups (members, rights, restrictions) |
+| `my_group` | `/MyGroup` — current user's primary group |
+| `contacts` | `/Contacts` — company phone book |
+| `parameters` | `/TenantProperties`, `/DNProperties`, directory info |
+
+### Call routing & flow
+| `client.<service>` | Resource |
+|---|---|
 | `queues` | `/Queues` — CRUD call queues & agents |
 | `ring_groups` | `/RingGroups` — CRUD ring groups |
-| `call_history` | `/CallHistoryView` — paginated call log |
-| `trunks` | `/Trunks`, `/Peers`, `/Sbcs` |
-| `contacts` | `/Contacts` — company phone book |
-| `phones` | `/Phones`, `/PhoneTemplates` — IP phones |
+| `inbound_rules` | `/InboundRules` — DID/inbound rules |
+| `outbound_rules` | `/OutboundRules` — outbound dial rules |
+| `receptionists` | `/Receptionists` — digital receptionists |
+| `holidays` | `/Holidays`, `/OfficeHours` |
+| `parkings` | `/Parkings`, `/CallParkingSettings` |
+| `call_flow` | `/CallFlowApps`, `/CallFlowScripts` |
+
+### Trunks & PBX hardware
+| `client.<service>` | Resource |
+|---|---|
+| `trunks` | `/Trunks`, `/TrunkTemplates`, `/Peers`, `/Sbcs` |
+| `phones` | `/Phones`, `/PhoneTemplates`, `/SipDevices`, `/Fxs`, `/FxsTemplates`, `/DeviceInfos`, `/Firmwares` |
+
+### Communication
+| `client.<service>` | Resource |
+|---|---|
+| `chat` | `/ChatHistoryView`, `/ChatMessagesHistoryView` |
+| `prompts` | `/PromptSets`, `/CustomPrompts`, `/Playlists` |
+| `email` | `/EmailTemplate` |
+
+### System administration
+| `client.<service>` | Resource |
+|---|---|
 | `system` | `/SystemStatus`, `/LicenseStatus`, `/Parameters` |
-| `reports` | Call log, queue & extension statistics, activity log |
+| `settings` | `/GeneralSettingsForPbx`, `/MailSettings`, `/CDRSettings`, ~20 settings domains |
+| `pbx_services` | `/Services` — start/stop/enable/disable PBX services |
+| `backups` | `/Backups`, failover & restore settings |
+| `updates` | `/Updates`, prompt set / CRM updates, Debian upgrade |
+| `event_logs` | `/EventLogs` |
+| `security` | `/SecurityTokens`, `/ServicePrincipals`, `/BlackListNumbers`, `/Blocklist`, `/AntiHackingSettings`, `/Firewall` |
+| `emergency` | `/EmergencyGeoLocations`, `/EmergencyNotificationsSettings` |
+| `defs` | `/Defs` — codecs, timezones, gateway parameters, countries, DID numbers |
+
+### Integrations
+| `client.<service>` | Resource |
+|---|---|
+| `integrations` | `/Microsoft365Integration`, `/Microsoft365TeamsIntegration`, `/GoogleSettings`, `/AmazonIntegrationSettings`, `/DataConnectorSettings`, `/AISettings` |
+| `crm` | `/CrmIntegration`, `/CrmTemplates` |
+| `website_links` | `/WebsiteLinks` |
+
+### Reporting
+| `client.<service>` | Resource |
+|---|---|
+| `reports` | 30+ report endpoints: call log, queue & extension statistics, agent login, activity log, SLA breaches, audit, scheduled reports |
 
 ## Escape hatch
 

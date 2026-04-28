@@ -23,27 +23,38 @@ Authentication: **OAuth2 client credentials** (`POST /connect/token`).
     ├── auth.py               # OAuth2Auth — httpx.Auth subclass, caches token, auto-refreshes 30s before expiry
     ├── exceptions.py         # ThreeCXError hierarchy + raise_for_status() dispatcher
     ├── odata.py              # ODataQuery — fluent builder for all OData query parameters
-    ├── models/
-    │   ├── base.py           # ODataCollection[T] (generic envelope), ODataError
+    ├── models/              # Pydantic models, one file per domain
+    │   ├── base.py           # _Base (extra="allow", populate_by_name), ODataCollection, ODataError
     │   ├── calls.py          # ActiveCall, CallHistoryEntry, OutboundCall
-    │   ├── users.py          # User, Group, ForwardingProfile, Greeting
+    │   ├── users.py          # User, UserGroupRef, ForwardingProfile, Greeting
+    │   ├── groups.py         # Group (full admin entity)
     │   ├── queues.py         # Queue, QueueAgent, QueueManager, RingGroup, RingGroupMember
-    │   ├── trunks.py         # Trunk, Peer, Sbc
+    │   ├── trunks.py         # Trunk, TrunkTemplate, Peer, Sbc
     │   ├── contacts.py       # Contact
-    │   ├── phones.py         # Phone, PhoneTemplate
-    │   └── system.py         # SystemStatus, LicenseStatus, SystemParameters
-    └── services/
-        ├── base.py           # BaseService: _get/_post/_patch/_delete, _paginate()
-        ├── active_calls.py   # list(), iterate(), drop(id)
-        ├── users.py          # list/iterate/create/get/update/delete + groups/greetings/make_call/batch_delete
-        ├── queues.py         # list/iterate/create/get/update/delete + agents/managers/reset_statistics
-        ├── ring_groups.py    # list/iterate/create/get/update/delete
-        ├── call_history.py   # list(), iterate(), count()
-        ├── trunks.py         # trunks + peers + SBCs (get/create/update/delete per resource)
-        ├── contacts.py       # list/iterate/create/get/update/delete
-        ├── phones.py         # phones + templates + reboot/reprovision
-        ├── system.py         # status/license/parameters + raw get/post escape hatches
-        └── reports.py        # call log, extension stats, queue performance, agent login, activity log
+    │   ├── phones.py         # Phone, PhoneTemplate, SipDevice, Fxs, FxsTemplate, DeviceInfo, Firmware
+    │   ├── system.py         # SystemStatus, LicenseStatus, SystemParameters, Parameter
+    │   ├── rules.py          # InboundRule, OutboundRule
+    │   ├── receptionists.py  # Receptionist
+    │   ├── holidays.py       # Holiday
+    │   ├── parkings.py       # Parking
+    │   ├── recordings.py     # Recording
+    │   ├── fax.py            # Fax
+    │   ├── backups.py        # BackupEntry
+    │   ├── call_flow.py      # CallFlowApp
+    │   ├── prompts.py        # PromptSet, Playlist
+    │   └── website_links.py  # Weblink
+    └── services/             # 37 service classes — one per resource group
+        ├── base.py           # BaseService: _get/_post/_patch/_delete/_get_bytes, _list_values, _paginate
+        ├── active_calls.py, call_history.py, recordings.py, voicemail.py, fax.py
+        ├── users.py, my_user.py, groups.py, my_group.py, contacts.py, parameters.py
+        ├── queues.py, ring_groups.py, inbound_rules.py, outbound_rules.py
+        ├── receptionists.py, holidays.py, parkings.py, call_flow.py
+        ├── trunks.py, phones.py
+        ├── chat.py, prompts.py, email.py
+        ├── system.py, settings.py, pbx_services.py, backups.py, updates.py
+        ├── event_logs.py, security.py, emergency.py, defs.py
+        ├── integrations.py, crm.py, website_links.py
+        └── reports.py        # 30+ report endpoints
 ```
 
 ## Key design decisions
@@ -208,5 +219,6 @@ Dev only: `pytest`, `pytest-httpx`, `ruff`, `mypy`.
 ## What is out of scope
 
 - Async support (not implemented; the API is sync)
-- All 177 resource groups — only the most common ~10 have typed services; use `client.get()` / `client.post()` for the rest
 - Websocket / push notifications (not part of XAPI)
+
+The SDK provides typed services for **all 140 resource groups** in `swagger.yaml`. Use `client.get()` / `client.post()` only when you need raw control over an individual call.
