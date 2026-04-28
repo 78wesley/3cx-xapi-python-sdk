@@ -23,26 +23,27 @@ Authentication: **OAuth2 client credentials** (`POST /connect/token`).
     ├── auth.py               # OAuth2Auth — httpx.Auth subclass, caches token, auto-refreshes 30s before expiry
     ├── exceptions.py         # ThreeCXError hierarchy + raise_for_status() dispatcher
     ├── odata.py              # ODataQuery — fluent builder for all OData query parameters
-    ├── models/              # Pydantic models, one file per domain
+    ├── models/              # Pydantic models — one facade file per domain, re-exporting from _generated
     │   ├── base.py           # _Base (extra="allow", populate_by_name), ODataCollection, ODataError
-    │   ├── calls.py          # ActiveCall, CallHistoryEntry, OutboundCall
-    │   ├── users.py          # User, UserGroupRef, ForwardingProfile, Greeting
-    │   ├── groups.py         # Group (full admin entity)
-    │   ├── queues.py         # Queue, QueueAgent, QueueManager, RingGroup, RingGroupMember
-    │   ├── trunks.py         # Trunk, TrunkTemplate, Peer, Sbc
-    │   ├── contacts.py       # Contact
-    │   ├── phones.py         # Phone, PhoneTemplate, SipDevice, Fxs, FxsTemplate, DeviceInfo, Firmware
-    │   ├── system.py         # SystemStatus, LicenseStatus, SystemParameters, Parameter
-    │   ├── rules.py          # InboundRule, OutboundRule
-    │   ├── receptionists.py  # Receptionist
-    │   ├── holidays.py       # Holiday
-    │   ├── parkings.py       # Parking
-    │   ├── recordings.py     # Recording
-    │   ├── fax.py            # Fax
-    │   ├── backups.py        # BackupEntry
-    │   ├── call_flow.py      # CallFlowApp
-    │   ├── prompts.py        # PromptSet, Playlist
-    │   └── website_links.py  # Weblink
+    │   ├── _generated.py     # Auto-generated from swagger.yaml — all 459 entity classes + 109 enums
+    │   ├── calls.py          # facade: ActiveCall, CallHistoryView (alias CallHistoryEntry), OutboundCall
+    │   ├── users.py          # facade: User (with full_name property), UserGroup/UserGroupRef, ForwardingProfile, Greeting
+    │   ├── groups.py         # facade: Group
+    │   ├── queues.py         # facade: Queue, QueueAgent, QueueManager, RingGroup, RingGroupMember
+    │   ├── trunks.py         # facade: Trunk, TrunkTemplate, Peer, Sbc
+    │   ├── contacts.py       # facade: Contact (with full_name property)
+    │   ├── phones.py         # facade: Phone, PhoneTemplate, SipDevice, Fxs, FxsTemplate, DeviceInfo, Firmware
+    │   ├── system.py         # facade: SystemStatus, LicenseStatus, SystemParameters, Parameter
+    │   ├── rules.py          # facade: InboundRule, OutboundRule
+    │   ├── receptionists.py  # facade: Receptionist
+    │   ├── holidays.py       # facade: Holiday
+    │   ├── parkings.py       # facade: Parking
+    │   ├── recordings.py     # facade: Recording
+    │   ├── fax.py            # facade: Fax
+    │   ├── backups.py        # facade: Backups (alias BackupEntry)
+    │   ├── call_flow.py      # facade: CallFlowApp
+    │   ├── prompts.py        # facade: PromptSet, Playlist
+    │   └── website_links.py  # facade: Weblink
     └── services/             # 37 service classes — one per resource group
         ├── base.py           # BaseService: _get/_post/_patch/_delete/_get_bytes, _list_values, _paginate
         ├── active_calls.py, call_history.py, recordings.py, voicemail.py, fax.py
@@ -105,21 +106,35 @@ grep -n "^  /MyResource" swagger.yaml
 
 Note the HTTP methods, path parameter names, request body schemas, and response schemas.
 
-### Step 2 — Write or extend a model
+### Step 2 — Find or extend a model
 
-In `threecx/models/<domain>.py`:
+Models are **auto-generated** from `swagger.yaml` into `threecx/models/_generated.py` using `datamodel-code-generator`. The per-domain files (`models/users.py`, `models/queues.py`, etc.) are thin facades that re-export the relevant classes:
 
 ```python
-from .base import _Base
-from pydantic import Field
-from typing import Optional
+# threecx/models/users.py
+from ._generated import ForwardingProfile, Greeting, User as _User, UserGroup
 
-class MyEntity(_Base):
-    id: Optional[int] = Field(None, alias="Id")
-    name: Optional[str] = Field(None, alias="Name")
+class User(_User):
+    @property
+    def full_name(self) -> str:
+        return " ".join(filter(None, [self.first_name, self.last_name]))
 ```
 
-Export it from `threecx/models/__init__.py`.
+If swagger has a `Pbx.MyEntity` schema, its generated class is already in `_generated.py`. Add a re-export shim in the appropriate domain file. Custom helper properties (like `full_name`) live in the facade subclass.
+
+If you need to **regenerate** after a swagger update:
+
+```bash
+rm -rf /tmp/threecx_gen
+uvx --from datamodel-code-generator datamodel-codegen \
+    --input swagger.yaml --input-file-type openapi \
+    --output /tmp/threecx_gen --output-model-type pydantic_v2.BaseModel \
+    --target-python-version 3.10 --snake-case-field --use-double-quotes \
+    --use-default --use-schema-description
+python scripts/generate_models.py
+```
+
+The post-processor swaps `BaseModel` for our `_Base` (which sets `extra="allow"` and `populate_by_name=True`).
 
 ### Step 3 — Write the service
 

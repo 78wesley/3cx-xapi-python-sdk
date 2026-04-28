@@ -8,6 +8,7 @@ A typed Python SDK for the **3CX XAPI** (`/xapi/v1`), built on [httpx](https://w
 - **OData v4** query builder (`$filter`, `$select`, `$expand`, `$orderby`, `$top`, `$skip`, `$count`)
 - Automatic **pagination** — iterate over all pages with a single generator call
 - **Full coverage** — 37 typed services covering every resource group in the 3CX XAPI swagger spec
+- **Auto-generated models** — every Pydantic model is generated from `swagger.yaml`, giving you full IDE autocomplete on every field of every entity (User has 60+ typed fields, Queue has 50+, etc.)
 - Reporting helpers for call log, queue performance, extension statistics, activity log, and more
 - **Context-manager** support for clean resource management
 - Escape hatches (`client.get()` / `client.post()`) for raw access to any endpoint

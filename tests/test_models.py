@@ -20,7 +20,7 @@ def test_user_validates_from_api_payload():
         "Number": "100",
         "FirstName": "Alice",
         "LastName": "Smith",
-        "Email": "alice@example.com",
+        "EmailAddress": "alice@example.com",
         "Enabled": True,
     }
     user = User.model_validate(payload)
@@ -28,7 +28,7 @@ def test_user_validates_from_api_payload():
     assert user.number == "100"
     assert user.first_name == "Alice"
     assert user.last_name == "Smith"
-    assert user.email == "alice@example.com"
+    assert user.email_address == "alice@example.com"
     assert user.enabled is True
 
 
@@ -75,13 +75,15 @@ def test_group_validates():
 
 
 def test_forwarding_profile_validates():
-    fp = ForwardingProfile.model_validate({"Id": 1, "Name": "Away", "Enabled": False})
-    assert fp.enabled is False
+    fp = ForwardingProfile.model_validate({"Id": 1, "Name": "Away", "NoAnswerTimeout": 30})
+    assert fp.name == "Away"
+    assert fp.no_answer_timeout == 30
 
 
 def test_greeting_validates():
-    gr = Greeting.model_validate({"Id": 7, "GreetingFile": "greeting.wav", "GreetingType": "Voicemail"})
+    gr = Greeting.model_validate({"Filename": "greeting.wav", "DisplayName": "Voicemail"})
     assert gr.filename == "greeting.wav"
+    assert gr.display_name == "Voicemail"
 
 
 # --- ActiveCall ---------------------------------------------------------------
@@ -90,40 +92,43 @@ def test_active_call_validates():
     payload = {
         "Id": 42,
         "Status": "Connected",
-        "Established": True,
+        "EstablishedAt": "2024-01-01T12:00:00Z",
         "Caller": "100",
         "Callee": "200",
-        "Duration": 65,
-        "OnHold": False,
     }
     call = ActiveCall.model_validate(payload)
     assert call.id == 42
     assert call.caller == "100"
-    assert call.duration == 65
-    assert call.on_hold is False
+    assert call.callee == "200"
+    assert call.status == "Connected"
+    assert call.established_at is not None
 
 
 def test_active_call_optional_fields_default_none():
     call = ActiveCall.model_validate({"Id": 1})
-    assert call.recording is None
-    assert call.is_internal is None
+    assert call.established_at is None
+    assert call.last_change_status is None
+    assert call.server_now is None
 
 
 # --- CallHistoryEntry ---------------------------------------------------------
 
 def test_call_history_entry_validates():
     payload = {
-        "Id": "abc-123",
-        "Caller": "100",
-        "Callee": "0031612345678",
-        "CallDirection": "Outbound",
-        "Status": "Answered",
-        "TalkDuration": 120,
+        "SegmentId": 123,
+        "SrcDn": "100",
+        "DstDn": "0031612345678",
+        "SrcCallerNumber": "100",
+        "DstCallerNumber": "0031612345678",
+        "CallAnswered": True,
+        "SrcInternal": True,
+        "DstExternal": True,
     }
     entry = CallHistoryEntry.model_validate(payload)
-    assert entry.id == "abc-123"
-    assert entry.direction == "Outbound"
-    assert entry.talk_duration == 120
+    assert entry.segment_id == 123
+    assert entry.src_dn == "100"
+    assert entry.dst_dn == "0031612345678"
+    assert entry.call_answered is True
 
 
 # --- Queue --------------------------------------------------------------------
@@ -142,9 +147,11 @@ def test_queue_validates():
 
 
 def test_queue_agent_validates():
-    agent = QueueAgent.model_validate({"DnNumber": "101", "Position": 1, "WrapUpTime": 10})
-    assert agent.dn_number == "101"
-    assert agent.wrap_up_time == 10
+    agent = QueueAgent.model_validate({"Id": 5, "Number": "101", "Name": "Alice", "SkillGroup": "Tier 1"})
+    assert agent.id == 5
+    assert agent.number == "101"
+    assert agent.name == "Alice"
+    assert agent.skill_group == "Tier 1"
 
 
 # --- RingGroup ----------------------------------------------------------------
@@ -158,29 +165,39 @@ def test_ring_group_validates():
         "RingTime": 15,
     }
     rg = RingGroup.model_validate(payload)
-    assert rg.ring_strategy == "Hunt"
+    assert rg.ring_strategy.value == "Hunt"
+    assert rg.ring_time == 15
 
 
 def test_ring_group_member_validates():
-    m = RingGroupMember.model_validate({"DnNumber": "102", "Timeout": 20})
-    assert m.dn_number == "102"
+    m = RingGroupMember.model_validate({"Id": 7, "Number": "102", "Name": "Bob"})
+    assert m.id == 7
+    assert m.number == "102"
+    assert m.name == "Bob"
 
 
 # --- Trunk / Peer / Sbc -------------------------------------------------------
 
 def test_trunk_validates():
-    trunk = Trunk.model_validate({"Id": 1, "Name": "SIP Trunk A", "Host": "sip.carrier.com", "Port": 5060})
-    assert trunk.host == "sip.carrier.com"
+    trunk = Trunk.model_validate({"Id": 1, "Number": "100", "AuthID": "trunkauth", "SimultaneousCalls": 8})
+    assert trunk.id == 1
+    assert trunk.number == "100"
+    assert trunk.auth_id == "trunkauth"
+    assert trunk.simultaneous_calls == 8
 
 
 def test_peer_validates():
-    peer = Peer.model_validate({"Id": 2, "Name": "Gateway", "Host": "192.168.1.1"})
-    assert peer.host == "192.168.1.1"
+    peer = Peer.model_validate({"Id": 2, "Name": "Gateway", "Number": "200"})
+    assert peer.id == 2
+    assert peer.name == "Gateway"
+    assert peer.number == "200"
 
 
 def test_sbc_validates():
-    sbc = Sbc.model_validate({"Id": 3, "Name": "SBC-1", "Host": "10.0.0.1"})
+    sbc = Sbc.model_validate({"Name": "SBC-1", "DisplayName": "Edge SBC", "LocalIPv4": "10.0.0.1"})
     assert sbc.name == "SBC-1"
+    assert sbc.display_name == "Edge SBC"
+    assert sbc.local_i_pv4 == "10.0.0.1"
 
 
 # --- Contact ------------------------------------------------------------------
@@ -204,39 +221,44 @@ def test_contact_validates():
 def test_phone_validates():
     phone = Phone.model_validate({
         "Id": 5,
-        "MAC": "AA:BB:CC:DD:EE:FF",
-        "Model": "Yealink T48S",
-        "IPAddress": "192.168.1.50",
+        "MacAddress": "AA:BB:CC:DD:EE:FF",
+        "Name": "Reception phone",
+        "TemplateName": "Yealink T48S",
     })
-    assert phone.mac == "AA:BB:CC:DD:EE:FF"
-    assert phone.model == "Yealink T48S"
+    assert phone.id == 5
+    assert phone.mac_address == "AA:BB:CC:DD:EE:FF"
+    assert phone.name == "Reception phone"
+    assert phone.template_name == "Yealink T48S"
 
 
 def test_phone_template_validates():
-    tmpl = PhoneTemplate.model_validate({"Id": 1, "Name": "T48S Default", "Manufacturer": "Yealink"})
-    assert tmpl.manufacturer == "Yealink"
+    tmpl = PhoneTemplate.model_validate({"Id": "yealink-t48s", "AddAllowed": True, "Codecs": ["g711a", "g711u"]})
+    assert tmpl.id == "yealink-t48s"
+    assert tmpl.add_allowed is True
+    assert tmpl.codecs == ["g711a", "g711u"]
 
 
 # --- SystemStatus / LicenseStatus ---------------------------------------------
 
 def test_system_status_validates():
     payload = {
-        "HasActiveCalls": True,
+        "Activated": True,
         "CallsActive": 3,
         "ExtensionsRegistered": 25,
         "ExtensionsTotal": 30,
-        "CpuUsage": 12.5,
+        "DiskUsage": 12,
         "Version": "20.0.0.123",
     }
     s = SystemStatus.model_validate(payload)
     assert s.calls_active == 3
-    assert s.pbx_version == "20.0.0.123"
+    assert s.version == "20.0.0.123"
+    assert s.activated is True
 
 
 def test_license_status_validates():
     lic = LicenseStatus.model_validate({
         "ProductCode": "3CXPSPROF",
         "MaxSimCalls": 32,
-        "MaxExtensions": 100,
     })
-    assert lic.max_simultaneous_calls == 32
+    assert lic.max_sim_calls == 32
+    assert lic.product_code == "3CXPSPROF"

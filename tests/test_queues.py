@@ -62,20 +62,20 @@ def test_delete_queue(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
 def test_get_agents(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=api("/Queues(10)/Agents"),
-        json={"value": [{"DnNumber": "100", "Position": 1}, {"DnNumber": "101", "Position": 2}]},
+        json={"value": [{"Id": 1, "Number": "100", "Name": "Alice"}, {"Id": 2, "Number": "101", "Name": "Bob"}]},
     )
     agents = client.queues.get_agents(10)
     assert len(agents) == 2
-    assert agents[0].dn_number == "100"
+    assert agents[0].number == "100"
 
 
 def test_get_managers(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=api("/Queues(10)/Managers"),
-        json={"value": [{"DnNumber": "102"}]},
+        json={"value": [{"Id": 3, "Number": "102", "Name": "Carol"}]},
     )
     managers = client.queues.get_managers(10)
-    assert managers[0].dn_number == "102"
+    assert managers[0].number == "102"
 
 
 def test_reset_statistics(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:

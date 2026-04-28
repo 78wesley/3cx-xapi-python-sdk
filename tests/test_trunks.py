@@ -9,9 +9,9 @@ from threecx import ThreeCXClient
 from threecx.models.trunks import Trunk
 
 
-TRUNK_1 = {"Id": 1, "Name": "SIP Carrier", "Host": "sip.carrier.com", "Port": 5060, "Enabled": True}
-PEER_1 = {"Id": 1, "Name": "PSTN GW", "Host": "192.168.1.100", "Port": 5060, "Enabled": True}
-SBC_1 = {"Id": 1, "Name": "SBC Edge", "Host": "10.0.0.1", "Port": 5060, "Enabled": True}
+TRUNK_1 = {"Id": 1, "Number": "100", "AuthID": "carrier-auth", "SimultaneousCalls": 8, "IsOnline": True}
+PEER_1 = {"Id": 1, "Name": "PSTN GW", "Number": "200"}
+SBC_1 = {"Name": "SBC Edge", "DisplayName": "SBC Edge", "LocalIPv4": "10.0.0.1"}
 
 
 @pytest.fixture
@@ -25,13 +25,14 @@ def client(httpx_mock: HTTPXMock) -> ThreeCXClient:
 def test_list_trunks(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=api("/Trunks"), json={"value": [TRUNK_1]})
     trunks = client.trunks.list_trunks()
-    assert trunks[0].host == "sip.carrier.com"
+    assert trunks[0].auth_id == "carrier-auth"
 
 
 def test_get_trunk(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=api("/Trunks(1)"), json=TRUNK_1)
     t = client.trunks.get_trunk(1)
-    assert t.name == "SIP Carrier"
+    assert t.id == 1
+    assert t.number == "100"
 
 
 def test_create_trunk(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
@@ -41,13 +42,13 @@ def test_create_trunk(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
         status_code=201,
         json={**TRUNK_1, "Id": 2},
     )
-    created = client.trunks.create_trunk(Trunk(Name="New Trunk", Host="sip2.carrier.com"))
+    created = client.trunks.create_trunk(Trunk(Number="101", AuthID="new-auth"))
     assert created.id == 2
 
 
 def test_update_trunk(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=api("/Trunks(1)"), method="PATCH", status_code=204)
-    client.trunks.update_trunk(1, {"Enabled": False})
+    client.trunks.update_trunk(1, {"SimultaneousCalls": 4})
 
 
 def test_delete_trunk(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
@@ -60,7 +61,7 @@ def test_delete_trunk(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
 def test_list_peers(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=api("/Peers"), json={"value": [PEER_1]})
     peers = client.trunks.list_peers()
-    assert peers[0].host == "192.168.1.100"
+    assert peers[0].number == "200"
 
 
 def test_get_peer(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
@@ -80,4 +81,4 @@ def test_list_sbcs(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
 def test_get_sbc(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=api("/Sbcs('SBC Edge')"), json=SBC_1)
     sbc = client.trunks.get_sbc("SBC Edge")
-    assert sbc.host == "10.0.0.1"
+    assert sbc.local_i_pv4 == "10.0.0.1"

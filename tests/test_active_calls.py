@@ -8,8 +8,8 @@ from tests.conftest import TOKEN_URL, TOKEN_JSON, api
 from threecx import ThreeCXClient
 
 
-CALL_1 = {"Id": 1, "Status": "Connected", "Established": True, "Caller": "100", "Callee": "200", "Duration": 30}
-CALL_2 = {"Id": 2, "Status": "Ringing", "Established": False, "Caller": "101", "Callee": "0031612345678"}
+CALL_1 = {"Id": 1, "Status": "Connected", "EstablishedAt": "2024-01-01T12:00:00Z", "Caller": "100", "Callee": "200"}
+CALL_2 = {"Id": 2, "Status": "Ringing", "Caller": "101", "Callee": "0031612345678"}
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def test_list_active_calls(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None
     calls = client.active_calls.list()
     assert len(calls) == 2
     assert calls[0].id == 1
-    assert calls[0].duration == 30
+    assert calls[0].status == "Connected"
     assert calls[1].caller == "101"
 
 
@@ -47,11 +47,11 @@ def test_drop_call(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     client.active_calls.drop(1)
 
 
-def test_active_call_on_hold_field(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
+def test_active_call_last_change_status_field(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=api("/ActiveCalls"),
-        json={"value": [{**CALL_1, "OnHold": True, "Recording": False}]},
+        json={"value": [{**CALL_1, "LastChangeStatus": "2024-01-01T12:05:00Z", "ServerNow": "2024-01-01T12:10:00Z"}]},
     )
     calls = client.active_calls.list()
-    assert calls[0].on_hold is True
-    assert calls[0].recording is False
+    assert calls[0].last_change_status is not None
+    assert calls[0].server_now is not None

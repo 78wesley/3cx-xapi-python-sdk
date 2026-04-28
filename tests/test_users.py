@@ -9,7 +9,7 @@ from threecx import ThreeCXClient
 from threecx.models.users import User
 from threecx.odata import ODataQuery
 
-USER_1 = {"Id": 101, "Number": "100", "FirstName": "Alice", "LastName": "Smith", "Email": "alice@x.com", "Enabled": True}
+USER_1 = {"Id": 101, "Number": "100", "FirstName": "Alice", "LastName": "Smith", "EmailAddress": "alice@x.com", "Enabled": True}
 USER_2 = {"Id": 102, "Number": "101", "FirstName": "Bob", "LastName": "Jones", "Enabled": True}
 
 
@@ -72,7 +72,7 @@ def test_get_user_by_id(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(url=api("/Users(101)"), json=USER_1)
     user = client.users.get(101)
     assert user.id == 101
-    assert user.email == "alice@x.com"
+    assert user.email_address == "alice@x.com"
 
 
 def test_get_user_with_expand(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
@@ -168,7 +168,7 @@ def test_get_forwarding_profiles(client: ThreeCXClient, httpx_mock: HTTPXMock) -
 def test_get_greetings(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=api("/Users(101)/Greetings"),
-        json={"value": [{"Id": 1, "GreetingFile": "voicemail.wav", "GreetingType": "Voicemail"}]},
+        json={"value": [{"Filename": "voicemail.wav", "DisplayName": "Voicemail"}]},
     )
     greetings = client.users.get_greetings(101)
     assert greetings[0].filename == "voicemail.wav"

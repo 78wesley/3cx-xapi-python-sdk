@@ -9,9 +9,9 @@ from threecx import ThreeCXClient
 from threecx.odata import ODataQuery
 
 
-ENTRY_1 = {"Id": "e1", "Caller": "100", "Callee": "200", "CallDirection": "Internal", "Status": "Answered", "TalkDuration": 60}
-ENTRY_2 = {"Id": "e2", "Caller": "101", "Callee": "0031612345678", "CallDirection": "Outbound", "Status": "Answered", "TalkDuration": 120}
-ENTRY_3 = {"Id": "e3", "Caller": "102", "Callee": "0031698765432", "CallDirection": "Outbound", "Status": "NoAnswer", "TalkDuration": 0}
+ENTRY_1 = {"SegmentId": 1, "SrcDn": "100", "DstDn": "200", "SrcInternal": True, "DstInternal": True, "CallAnswered": True}
+ENTRY_2 = {"SegmentId": 2, "SrcDn": "101", "DstDn": "0031612345678", "SrcInternal": True, "DstExternal": True, "CallAnswered": True}
+ENTRY_3 = {"SegmentId": 3, "SrcDn": "102", "DstDn": "0031698765432", "SrcInternal": True, "DstExternal": True, "CallAnswered": False}
 
 
 @pytest.fixture
@@ -24,8 +24,8 @@ def test_list_call_history(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None
     httpx_mock.add_response(url=api("/CallHistoryView"), json={"value": [ENTRY_1, ENTRY_2]})
     entries = client.call_history.list()
     assert len(entries) == 2
-    assert entries[0].id == "e1"
-    assert entries[1].direction == "Outbound"
+    assert entries[0].segment_id == 1
+    assert entries[1].dst_dn == "0031612345678"
 
 
 def test_list_with_filter(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
@@ -53,7 +53,7 @@ def test_iterate_multiple_pages(client: ThreeCXClient, httpx_mock: HTTPXMock) ->
     )
     entries = list(client.call_history.iterate())
     assert len(entries) == 3
-    assert [e.id for e in entries] == ["e1", "e2", "e3"]
+    assert [e.segment_id for e in entries] == [1, 2, 3]
 
 
 def test_count(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
