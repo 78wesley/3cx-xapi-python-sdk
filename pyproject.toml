@@ -22,14 +22,25 @@ dev = [
     "pytest-httpx>=0.30",
     "ruff",
     "mypy",
+    "pyyaml>=6",          # spec-drift checks read swagger.yaml
+    "types-pyyaml",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["threecx"]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py310"
+
+[tool.ruff.lint]
+# Pinned explicitly so `ruff check` stays meaningful and green across ruff
+# releases. The UP* (pyupgrade) family is deliberately excluded: the codebase
+# targets 3.10 and the generated models use typing constructs it would rewrite.
+select = ["E4", "E7", "E9", "E501", "F", "I", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"threecx/models/_generated.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"

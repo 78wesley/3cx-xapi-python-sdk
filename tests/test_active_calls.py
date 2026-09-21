@@ -4,9 +4,8 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, api
+from tests.conftest import TOKEN_JSON, TOKEN_URL, api
 from threecx import ThreeCXClient
-
 
 CALL_1 = {"Id": 1, "Status": "Connected", "EstablishedAt": "2024-01-01T12:00:00Z", "Caller": "100", "Callee": "200"}
 CALL_2 = {"Id": 2, "Status": "Ringing", "Caller": "101", "Callee": "0031612345678"}

@@ -1,8 +1,6 @@
 """Unit tests for Pydantic model validation, alias mapping, and serialisation."""
 from __future__ import annotations
 
-import pytest
-
 from threecx.models.calls import ActiveCall, CallHistoryEntry
 from threecx.models.contacts import Contact
 from threecx.models.phones import Phone, PhoneTemplate
@@ -10,7 +8,6 @@ from threecx.models.queues import Queue, QueueAgent, RingGroup, RingGroupMember
 from threecx.models.system import LicenseStatus, SystemStatus
 from threecx.models.trunks import Peer, Sbc, Trunk
 from threecx.models.users import ForwardingProfile, Greeting, Group, User
-
 
 # --- User ---------------------------------------------------------------------
 

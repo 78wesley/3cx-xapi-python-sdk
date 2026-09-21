@@ -10,16 +10,17 @@ Python SDK for the 3CX XAPI (`/xapi/v1`).  The source is `swagger.yaml` (OpenAPI
 pip install -e ".[dev]"   # install editable with dev extras
 ```
 
-Dependencies: `httpx>=0.27`, `pydantic>=2.0`.  Dev extras add `pytest`, `pytest-httpx`, `ruff`, `mypy`.
+Dependencies: `httpx>=0.27`, `pydantic>=2.0`.  Dev extras add `pytest`, `pytest-httpx`, `ruff`, `mypy`, `pyyaml`.
 
 ## Commands to run after changes
 
 ```bash
-ruff check threecx/          # lint
-mypy threecx/                # type-check
-pytest                       # tests (once a tests/ dir exists)
+ruff check threecx/ tests/ scripts/   # lint
+mypy threecx/                         # type-check
+pytest                                # tests (includes the spec-drift guard)
 ```
 
+All three run in CI (`.github/workflows/ci.yml`) on push and PR, against Python 3.10 and 3.13.
 No build step is required; the package is pure Python.
 
 ## Architecture — one rule per layer
@@ -56,9 +57,46 @@ No build step is required; the package is pure Python.
 - Do not create new top-level files outside `threecx/` without discussing first.
 - Do not import from `swagger.yaml` at runtime — the file is a reference only.
 
+## Updating to a new swagger.yaml
+
+`swagger.yaml` is **committed**, so a new spec drop is an ordinary diff. Follow this order — each
+step narrows what the next one has to look at.
+
+```bash
+# 0. Drop in the new spec, then see what the vendor changed.
+git diff --stat swagger.yaml
+grep -m1 x-pbx-version swagger.yaml
+
+# 1. Regenerate the Pydantic models. One command; runs datamodel-codegen via uvx,
+#    post-processes onto our _Base, and normalises imports so it is idempotent.
+python scripts/generate_models.py
+
+# 2. Read the model delta as a shape, not 800 diff lines.
+#    Removed classes and retyped/removed fields are the breaking ones.
+python scripts/diff_models.py
+
+# 3. Find endpoint drift in the hand-written service layer.
+#    Lists spec operations with no method, and methods hitting routes that are gone.
+python scripts/check_spec_coverage.py
+
+# 4. Edit threecx/services/*.py until step 3 is clean, then:
+ruff check threecx/ tests/ scripts/ && mypy threecx/ && pytest
+```
+
+Steps 1–3 are mechanical and safe to automate. Step 4 is judgement: a route that disappeared may
+have *moved* (in 20.0.10 `MakeCall` went from `/Users({Id})/Pbx.MakeCall` to the collection-level
+`/Users/Pbx.MakeCall`) rather than been withdrawn, so check the spec before deleting a method.
+
+`pytest` fails on any drift via `tests/test_spec_coverage.py`. If the SDK must keep calling a URL
+whose shape cannot be matched back to a spec template (e.g. it inlines optional path parameters),
+add it to `KNOWN_INLINED` in `scripts/spec_tools.py` with a reason — do not loosen the check.
+
+Removing or re-signing a public service method is a breaking change: bump the major version in
+`pyproject.toml` and note it in the release.
+
 ## Swagger reference
 
-`swagger.yaml` in the project root is the authoritative API spec.  It is 39 000+ lines and 1.1 MB — use `grep -n` or the Explore agent to look things up; do not read it whole.
+`swagger.yaml` in the project root is the authoritative API spec.  It is 40 000+ lines and 1.2 MB — use `grep -n` or the Explore agent to look things up; do not read it whole.
 
 Key patterns in the spec:
 - Collection GET: `GET /Resource` → returns `{"value": [...], "@odata.nextLink": "..."}`

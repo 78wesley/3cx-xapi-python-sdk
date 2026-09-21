@@ -1,22 +1,22 @@
+from .backups import BackupEntry
 from .base import ODataCollection, ODataError
+from .call_flow import CallFlowApp
 from .calls import ActiveCall, CallHistoryEntry, OutboundCall
-from .users import User, UserGroupRef, ForwardingProfile, Greeting
-from .queues import Queue, QueueAgent, QueueManager, RingGroup, RingGroupMember
-from .trunks import Trunk, Peer, Sbc, TrunkTemplate
-from .system import SystemStatus, LicenseStatus, SystemParameters, Parameter
 from .contacts import Contact
-from .phones import Phone, PhoneTemplate, SipDevice, Fxs, FxsTemplate, DeviceInfo, Firmware
+from .fax import Fax
 from .groups import Group
-from .rules import InboundRule, OutboundRule
-from .receptionists import Receptionist
 from .holidays import Holiday
 from .parkings import Parking
+from .phones import DeviceInfo, Firmware, Fxs, FxsTemplate, Phone, PhoneTemplate, SipDevice
+from .prompts import Playlist, PromptSet
+from .queues import Queue, QueueAgent, QueueManager, RingGroup, RingGroupMember
+from .receptionists import Receptionist
 from .recordings import Recording
-from .fax import Fax
-from .backups import BackupEntry
-from .call_flow import CallFlowApp
+from .rules import InboundRule, OutboundRule
+from .system import LicenseStatus, Parameter, SystemParameters, SystemStatus
+from .trunks import Peer, Sbc, Trunk, TrunkTemplate
+from .users import ForwardingProfile, Greeting, User, UserGroupRef
 from .website_links import Weblink
-from .prompts import PromptSet, Playlist
 
 __all__ = [
     "ODataCollection",

@@ -4,14 +4,22 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, api
+from tests.conftest import TOKEN_JSON, TOKEN_URL, api
 from threecx import ThreeCXClient
 from threecx.odata import ODataQuery
 
-
-ENTRY_1 = {"SegmentId": 1, "SrcDn": "100", "DstDn": "200", "SrcInternal": True, "DstInternal": True, "CallAnswered": True}
-ENTRY_2 = {"SegmentId": 2, "SrcDn": "101", "DstDn": "0031612345678", "SrcInternal": True, "DstExternal": True, "CallAnswered": True}
-ENTRY_3 = {"SegmentId": 3, "SrcDn": "102", "DstDn": "0031698765432", "SrcInternal": True, "DstExternal": True, "CallAnswered": False}
+ENTRY_1 = {
+    "SegmentId": 1, "SrcDn": "100", "DstDn": "200",
+    "SrcInternal": True, "DstInternal": True, "CallAnswered": True,
+}
+ENTRY_2 = {
+    "SegmentId": 2, "SrcDn": "101", "DstDn": "0031612345678",
+    "SrcInternal": True, "DstExternal": True, "CallAnswered": True,
+}
+ENTRY_3 = {
+    "SegmentId": 3, "SrcDn": "102", "DstDn": "0031698765432",
+    "SrcInternal": True, "DstExternal": True, "CallAnswered": False,
+}
 
 
 @pytest.fixture

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from ._generated import ForwardingProfile, Greeting
+from ._generated import ForwardingProfile, Greeting, UserGroup
 from ._generated import User as _User
-from ._generated import UserGroup
 
 
 class User(_User):

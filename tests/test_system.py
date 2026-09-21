@@ -4,9 +4,8 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, api
+from tests.conftest import TOKEN_JSON, TOKEN_URL, api
 from threecx import ThreeCXClient
-
 
 STATUS_PAYLOAD = {
     "Activated": True,

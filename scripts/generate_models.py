@@ -1,70 +1,28 @@
 """Regenerate threecx/models/_generated.py from swagger.yaml.
 
 Usage:
-    uvx --from datamodel-code-generator scripts/generate_models.py
+    python scripts/generate_models.py                 # runs datamodel-codegen, then post-processes
+    python scripts/generate_models.py --keep <dir>    # keep the raw codegen output for inspection
+    python scripts/generate_models.py --skip-codegen --keep <dir>
+                                                      # reuse a previous codegen run
 
-Or run the steps manually:
-    rm -rf /tmp/threecx_gen
-    uvx --from datamodel-code-generator datamodel-codegen \
-        --input swagger.yaml \
-        --input-file-type openapi \
-        --output /tmp/threecx_gen \
-        --output-model-type pydantic_v2.BaseModel \
-        --target-python-version 3.10 \
-        --snake-case-field \
-        --use-double-quotes \
-        --use-default \
-        --use-schema-description
-    python scripts/generate_models.py
+datamodel-codegen is invoked through `uvx`, so it does not need to be installed.
+Review the result with `python scripts/diff_models.py`.
 """
 from __future__ import annotations
 
+import argparse
+import shutil
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
-SWAGGER_GEN_DIR = Path("/tmp/threecx_gen")
+ROOT = Path(__file__).resolve().parent.parent
+SWAGGER = ROOT / "swagger.yaml"
 TARGET = ROOT / "threecx" / "models" / "_generated.py"
 
-
-def strip_header(text: str) -> str:
-    lines = text.splitlines()
-    out, in_header = [], True
-    for line in lines:
-        if in_header and (line.startswith("#") or not line.strip()):
-            continue
-        in_header = False
-        out.append(line)
-    return "\n".join(out)
-
-
-def filter_imports(text: str, drop_prefixes: tuple[str, ...]) -> str:
-    return "\n".join(
-        line for line in text.splitlines()
-        if not any(line.startswith(p) for p in drop_prefixes)
-    )
-
-
-def main() -> None:
-    if not (SWAGGER_GEN_DIR / "Pbx" / "__init__.py").exists():
-        raise SystemExit(
-            f"Run datamodel-codegen first to populate {SWAGGER_GEN_DIR}. See module docstring."
-        )
-
-    parent = strip_header((SWAGGER_GEN_DIR / "__init__.py").read_text())
-    pbx = strip_header((SWAGGER_GEN_DIR / "Pbx" / "__init__.py").read_text())
-
-    drop = (
-        "from __future__",
-        "from datetime",
-        "from enum",
-        "from uuid",
-        "from pydantic",
-        "from .. import",
-    )
-    parent = filter_imports(parent, drop).strip()
-    pbx = filter_imports(pbx, drop).strip()
-
-    header = '''"""Auto-generated Pydantic models for the 3CX XAPI.
+HEADER = '''"""Auto-generated Pydantic models for the 3CX XAPI.
 
 Generated from swagger.yaml using datamodel-code-generator, then post-processed
 to use our _Base class (which sets extra='allow' and populate_by_name=True).
@@ -77,14 +35,116 @@ from datetime import time as time_aliased, timedelta
 from enum import Enum
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, RootModel, conint, constr
+from pydantic import AwareDatetime, ConfigDict, Field, RootModel, conint, constr
 
 from .base import _Base as BaseModel
 '''
 
-    TARGET.write_text(header + "\n\n" + parent + "\n\n\n" + pbx + "\n")
-    print(f"Wrote {TARGET} ({len(TARGET.read_text().splitlines())} lines)")
+# Imports datamodel-codegen emits that HEADER already provides (or that point at
+# the split-module layout we flatten away).
+DROP_IMPORT_PREFIXES = (
+    "from __future__",
+    "from datetime",
+    "from enum",
+    "from uuid",
+    "from pydantic",
+    "from .. import",
+)
+
+
+def run_codegen(out_dir: Path) -> None:
+    if shutil.which("uvx") is None:
+        raise SystemExit("uvx not found - install uv (https://docs.astral.sh/uv/) or pass --skip-codegen")
+    cmd = [
+        "uvx", "--from", "datamodel-code-generator", "datamodel-codegen",
+        "--input", str(SWAGGER),
+        "--input-file-type", "openapi",
+        "--output", str(out_dir),
+        "--output-model-type", "pydantic_v2.BaseModel",
+        "--target-python-version", "3.10",
+        "--snake-case-field",
+        "--use-double-quotes",
+        "--use-default",
+        "--use-schema-description",
+    ]
+    print("$ " + " ".join(cmd))
+    subprocess.run(cmd, check=True)
+
+
+def strip_header(text: str) -> str:
+    """Drop the leading comment banner datamodel-codegen writes."""
+    out: list[str] = []
+    in_header = True
+    for line in text.splitlines():
+        if in_header and (line.startswith("#") or not line.strip()):
+            continue
+        in_header = False
+        out.append(line)
+    return "\n".join(out)
+
+
+def filter_imports(text: str) -> str:
+    return "\n".join(
+        line for line in text.splitlines()
+        if not any(line.startswith(p) for p in DROP_IMPORT_PREFIXES)
+    )
+
+
+def build(gen_dir: Path) -> str:
+    pbx_init = gen_dir / "Pbx" / "__init__.py"
+    if not pbx_init.exists():
+        raise SystemExit(f"{pbx_init} missing - datamodel-codegen did not produce the expected layout")
+
+    # Pbx/ODataErrors.py is intentionally skipped: threecx/models/base.py hand-rolls
+    # ODataError, and threecx/exceptions.py is what consumers actually catch.
+    parent = filter_imports(strip_header((gen_dir / "__init__.py").read_text())).strip()
+    pbx = filter_imports(strip_header(pbx_init.read_text())).strip()
+    return HEADER + "\n\n" + parent + "\n\n\n" + pbx + "\n"
+
+
+def normalise_with_ruff() -> None:
+    """Sort the emitted imports so the file is lint-clean and regeneration is idempotent.
+
+    datamodel-codegen does not order imports the way ruff's isort rules want, which
+    would otherwise make every regeneration produce a spurious diff.
+    """
+    ruff = shutil.which("ruff")
+    cmd = [ruff, "check", "--fix", "--quiet", str(TARGET)] if ruff else \
+        ["uvx", "ruff", "check", "--fix", "--quiet", str(TARGET)]
+    if ruff is None and shutil.which("uvx") is None:
+        print("warning: ruff unavailable, skipping import normalisation", file=sys.stderr)
+        return
+    subprocess.run(cmd, check=False, cwd=ROOT)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Regenerate threecx/models/_generated.py from swagger.yaml.")
+    parser.add_argument("--skip-codegen", action="store_true", help="reuse an existing --keep directory")
+    parser.add_argument("--keep", type=Path, help="write raw codegen output here instead of a temp dir")
+    args = parser.parse_args()
+
+    if not SWAGGER.exists():
+        raise SystemExit(f"{SWAGGER} not found")
+
+    if args.keep:
+        gen_dir: Path = args.keep
+        if not args.skip_codegen:
+            shutil.rmtree(gen_dir, ignore_errors=True)
+            gen_dir.mkdir(parents=True)
+            run_codegen(gen_dir)
+        TARGET.write_text(build(gen_dir))
+    else:
+        if args.skip_codegen:
+            raise SystemExit("--skip-codegen requires --keep <dir>")
+        with tempfile.TemporaryDirectory(prefix="threecx-codegen-") as tmp:
+            run_codegen(Path(tmp))
+            TARGET.write_text(build(Path(tmp)))
+
+    normalise_with_ruff()
+    print(f"Wrote {TARGET.relative_to(ROOT)} ({len(TARGET.read_text().splitlines())} lines)")
+    print("Next: python scripts/diff_models.py && ruff check threecx/ && mypy threecx/ && pytest")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

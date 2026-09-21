@@ -1,8 +1,6 @@
 """Unit tests for ODataQuery — no HTTP required."""
 from __future__ import annotations
 
-import pytest
-
 from threecx.odata import ODataQuery
 
 

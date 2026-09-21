@@ -4,7 +4,7 @@ Guide for AI agents working on this codebase.
 
 ## What this project is
 
-A typed Python SDK for the **3CX XAPI** (`/xapi/v1`).  The API is an OData v4 service that controls a 3CX PBX: calls, users, queues, ring groups, trunks, phones, reporting, and system settings.  The authoritative spec is `swagger.yaml` (OpenAPI 3.0.4, ~39 000 lines).
+A typed Python SDK for the **3CX XAPI** (`/xapi/v1`).  The API is an OData v4 service that controls a 3CX PBX: calls, users, queues, ring groups, trunks, phones, reporting, and system settings.  The authoritative spec is `swagger.yaml` (OpenAPI 3.0.4, ~40 000 lines), committed at the repo root.
 
 Authentication: **OAuth2 client credentials** (`POST /connect/token`).
 
@@ -12,7 +12,7 @@ Authentication: **OAuth2 client credentials** (`POST /connect/token`).
 
 ```
 3cx-flow/
-├── swagger.yaml             # Full API spec — reference only, not used at runtime
+├── swagger.yaml             # Full API spec — committed baseline; reference only, not used at runtime
 ├── pyproject.toml           # Build metadata, dependencies, tool config
 ├── README.md                # End-user documentation
 ├── CLAUDE.md                # Claude Code project instructions
@@ -25,7 +25,7 @@ Authentication: **OAuth2 client credentials** (`POST /connect/token`).
     ├── odata.py              # ODataQuery — fluent builder for all OData query parameters
     ├── models/              # Pydantic models — one facade file per domain, re-exporting from _generated
     │   ├── base.py           # _Base (extra="allow", populate_by_name), ODataCollection, ODataError
-    │   ├── _generated.py     # Auto-generated from swagger.yaml — all 459 entity classes + 109 enums
+    │   ├── _generated.py     # Auto-generated from swagger.yaml — every entity class + enum
     │   ├── calls.py          # facade: ActiveCall, CallHistoryView (alias CallHistoryEntry), OutboundCall
     │   ├── users.py          # facade: User (with full_name property), UserGroup/UserGroupRef, ForwardingProfile, Greeting
     │   ├── groups.py         # facade: Group
@@ -125,16 +125,13 @@ If swagger has a `Pbx.MyEntity` schema, its generated class is already in `_gene
 If you need to **regenerate** after a swagger update:
 
 ```bash
-rm -rf /tmp/threecx_gen
-uvx --from datamodel-code-generator datamodel-codegen \
-    --input swagger.yaml --input-file-type openapi \
-    --output /tmp/threecx_gen --output-model-type pydantic_v2.BaseModel \
-    --target-python-version 3.10 --snake-case-field --use-double-quotes \
-    --use-default --use-schema-description
-python scripts/generate_models.py
+python scripts/generate_models.py   # runs datamodel-codegen via uvx, then post-processes
+python scripts/diff_models.py       # summarise what changed (new/removed classes, retyped fields)
 ```
 
-The post-processor swaps `BaseModel` for our `_Base` (which sets `extra="allow"` and `populate_by_name=True`).
+The post-processor swaps `BaseModel` for our `_Base` (which sets `extra="allow"` and `populate_by_name=True`), then normalises imports so re-running produces no spurious diff.
+
+See "Updating to a new swagger.yaml" in CLAUDE.md for the full spec-bump procedure, including the endpoint-drift check (`scripts/check_spec_coverage.py`).
 
 ### Step 3 — Write the service
 
@@ -197,7 +194,7 @@ All exceptions carry `.status_code` and `.detail` (raw response body).
 
 ## Testing approach
 
-Tests live in `tests/` (not yet created).  Use `pytest-httpx` to mock the `httpx.Client`:
+Tests live in `tests/`.  Use `pytest-httpx` to mock the `httpx.Client`:
 
 ```python
 import pytest
@@ -229,7 +226,7 @@ def test_list_users(client, httpx_mock):
 | `httpx>=0.27` | HTTP client; `httpx.Auth` protocol for transparent token injection |
 | `pydantic>=2.0` | Model validation, alias mapping, serialisation |
 
-Dev only: `pytest`, `pytest-httpx`, `ruff`, `mypy`.
+Dev only: `pytest`, `pytest-httpx`, `ruff`, `mypy`, `pyyaml` (spec-drift checks).
 
 ## What is out of scope
 

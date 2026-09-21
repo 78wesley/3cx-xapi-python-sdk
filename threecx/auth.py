@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Generator
 from dataclasses import dataclass, field
 
 import httpx
@@ -35,7 +36,7 @@ class OAuth2Auth(httpx.Auth):
 
     # --- httpx.Auth protocol --------------------------------------------------
 
-    def auth_flow(self, request: httpx.Request):
+    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         token = self._get_token()
         request.headers["Authorization"] = f"Bearer {token}"
         yield request

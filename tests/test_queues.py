@@ -4,10 +4,9 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, api
+from tests.conftest import TOKEN_JSON, TOKEN_URL, api
 from threecx import ThreeCXClient
 from threecx.models.queues import Queue
-
 
 QUEUE_1 = {"Id": 10, "Number": "800", "Name": "Support", "RingTimeout": 30, "SLATime": 20}
 QUEUE_2 = {"Id": 11, "Number": "801", "Name": "Sales", "RingTimeout": 20}

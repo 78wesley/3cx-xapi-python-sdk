@@ -1,11 +1,11 @@
-from .client import ThreeCXClient
 from .auth import OAuth2Auth
+from .client import ThreeCXClient
 from .exceptions import (
-    ThreeCXError,
     AuthenticationError,
     NotFoundError,
-    ValidationError,
     ServerError,
+    ThreeCXError,
+    ValidationError,
 )
 from .odata import ODataQuery
 

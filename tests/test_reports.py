@@ -1,16 +1,14 @@
 """Tests for ReportsService — URL construction and response parsing."""
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, API_BASE
+from tests.conftest import API_BASE, TOKEN_JSON, TOKEN_URL
 from threecx import ThreeCXClient
 from threecx.services.reports import _fmt_dt
-
 
 START = datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 END = datetime(2026, 1, 7, 23, 59, 59, tzinfo=timezone.utc)

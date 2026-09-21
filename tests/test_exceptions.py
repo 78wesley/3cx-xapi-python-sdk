@@ -14,7 +14,6 @@ from threecx.exceptions import (
     raise_for_status,
 )
 
-
 # --- _extract_message ---------------------------------------------------------
 
 def test_extract_message_plain_string():
