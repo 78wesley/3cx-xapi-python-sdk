@@ -30,6 +30,10 @@ class MyUserService(BaseService):
         data = self._get(f"{self._PATH}/Groups")
         return [UserGroupRef.model_validate(item) for item in data.get("value", [])]
 
+    def issue_download_ticket(self) -> Dict[str, Any]:
+        """POST /MyUser/Pbx.IssueDownloadTicket -> OneTimeTicket."""
+        return self._post("/MyUser/Pbx.IssueDownloadTicket")
+
     def generate_prov_link(self) -> str:
         data = self._get(f"{self._PATH}/Pbx.GenerateProvLink()")
         return str(data.get("value", ""))

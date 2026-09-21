@@ -100,7 +100,11 @@ class TrunksService(BaseService):
         return TrunkTemplate.model_validate(data)
 
     def update_trunk_template(self, template_id: int, changes: TrunkTemplate | Dict[str, Any]) -> None:
-        payload = changes.model_dump(by_alias=True, exclude_none=True) if isinstance(changes, TrunkTemplate) else changes
+        payload = (
+            changes.model_dump(by_alias=True, exclude_none=True)
+            if isinstance(changes, TrunkTemplate)
+            else changes
+        )
         self._patch(f"{self._TRUNK_TEMPLATES}({template_id})", json=payload)
 
     def delete_trunk_template(self, template_id: int) -> None:
@@ -114,25 +118,9 @@ class TrunksService(BaseService):
         data = self._list_raw(self._PEERS, query)
         return [Peer.model_validate(item) for item in data.get("value", [])]
 
-    def get_peer(self, peer_id: int, query: Optional[ODataQuery] = None) -> Peer:
-        data = self._get(f"{self._PEERS}({peer_id})", params=self._query_params(query))
-        return Peer.model_validate(data)
-
     def get_peer_by_number(self, number: str) -> Peer:
         data = self._get(f"{self._PEERS}(Number='{number}')")
         return Peer.model_validate(data)
-
-    def create_peer(self, peer: Peer | Dict[str, Any]) -> Peer:
-        payload = peer.model_dump(by_alias=True, exclude_none=True) if isinstance(peer, Peer) else peer
-        data = self._post(self._PEERS, json=payload)
-        return Peer.model_validate(data)
-
-    def update_peer(self, peer_id: int, changes: Peer | Dict[str, Any]) -> None:
-        payload = changes.model_dump(by_alias=True, exclude_none=True) if isinstance(changes, Peer) else changes
-        self._patch(f"{self._PEERS}({peer_id})", json=payload)
-
-    def delete_peer(self, peer_id: int, etag: Optional[str] = None) -> None:
-        self._delete(f"{self._PEERS}({peer_id})", etag=etag)
 
     def get_report_peers(self) -> List[Dict[str, Any]]:
         data = self._get(f"{self._PEERS}/Pbx.GetReportPeers()")

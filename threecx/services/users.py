@@ -68,15 +68,8 @@ class UsersService(BaseService):
     def send_welcome_email(self, user_id: int) -> None:
         self._post(f"{self._PATH}({user_id})/Pbx.SendWelcomeEmail")
 
-    def make_call(self, user_id: int, destination: str) -> None:
-        self._post(f"{self._PATH}({user_id})/Pbx.MakeCall", json={"Destination": destination})
-
     def generate_prov_link(self, user_id: int) -> str:
         data = self._get(f"{self._PATH}({user_id})/Pbx.GenerateProvLink()")
-        return str(data.get("value", ""))
-
-    def get_phone_secret(self, user_id: int) -> str:
-        data = self._get(f"{self._PATH}({user_id})/Pbx.GetPhoneSecret()")
         return str(data.get("value", ""))
 
     def has_duplicated_email(self, user_id: int) -> bool:
@@ -86,18 +79,25 @@ class UsersService(BaseService):
     def make_call_record_greeting(self, user_id: int, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}({user_id})/Pbx.MakeCallUserRecordGreeting", json=data)
 
-    def regenerate(self, user_id: int) -> None:
-        self._post(f"{self._PATH}({user_id})/Pbx.Regenerate")
+    def regenerate(self, user_id: int, opts: Optional[Dict[str, Any]] = None) -> None:
+        self._post(f"{self._PATH}({user_id})/Pbx.Regenerate", json={"opts": opts or {}})
 
     def set_monitor_status(self, user_id: int, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}({user_id})/Pbx.SetMonitorStatus", json=data)
+
+    def resend_rps(self, user_id: int, mac: Optional[str] = None) -> None:
+        self._post(f"{self._PATH}({user_id})/Pbx.ResendRps", json={"mac": mac})
+
+    def revoke_rps(self, user_id: int, mac: str) -> None:
+        self._post(f"{self._PATH}({user_id})/Pbx.RevokeRps", json={"mac": mac})
 
     # ------------------------------------------------------------------
     # Collection-level actions
     # ------------------------------------------------------------------
 
-    def batch_delete(self, user_ids: List[int]) -> None:
-        self._post(f"{self._PATH}/Pbx.BatchDelete", json={"userIds": user_ids})
+    def batch_delete(self, user_ids: List[int]) -> List[Dict[str, Any]]:
+        result = self._post(f"{self._PATH}/Pbx.BatchDelete", json={"ids": user_ids})
+        return self._list_values(result)
 
     def bulk_update(self, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}/Pbx.BulkUpdate", json=data)
@@ -105,17 +105,30 @@ class UsersService(BaseService):
     def multi_user_update(self, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}/Pbx.MultiUserUpdate", json=data)
 
-    def regenerate_passwords(self) -> None:
-        self._post(f"{self._PATH}/Pbx.RegeneratePasswords")
+    def regenerate_passwords(self, user_ids: List[int], opts: Optional[Dict[str, Any]] = None) -> None:
+        self._post(
+            f"{self._PATH}/Pbx.RegeneratePasswords",
+            json={"Ids": user_ids, "opts": opts or {}},
+        )
 
-    def reprove_all_phones(self) -> None:
-        self._post(f"{self._PATH}/Pbx.ReprovisionAllPhones")
+    def reprovision_all_phones(self, user_ids: List[int]) -> None:
+        self._post(f"{self._PATH}/Pbx.ReprovisionAllPhones", json={"ids": user_ids})
 
     def install_firmware(self, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}/Pbx.InstallFirmware", json=data)
 
-    def upgrade_phone(self, data: Dict[str, Any]) -> None:
-        self._post(f"{self._PATH}/Pbx.UpgradePhone", json=data)
+    def make_call(
+        self,
+        destination: str,
+        dn: Optional[str] = None,
+        contact: Optional[str] = None,
+        test_call: bool = False,
+    ) -> Dict[str, Any]:
+        """POST /Users/Pbx.MakeCall (collection-level since PBX 20.0.10)."""
+        return self._post(
+            f"{self._PATH}/Pbx.MakeCall",
+            json={"destination": destination, "dn": dn, "contact": contact, "testCall": test_call},
+        )
 
     def multi_delete_greeting(self, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}/Pbx.MultiDeleteGreeting", json=data)

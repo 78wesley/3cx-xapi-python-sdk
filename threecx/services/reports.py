@@ -74,6 +74,67 @@ class ReportsService(BaseService):
         data = self._get(path, params=self._query_params(query))
         return self._list_values(data)
 
+    def get_old_call_log(
+        self,
+        start: datetime,
+        end: datetime,
+        source_type: int = 0,
+        source_filter: str = "",
+        destination_type: int = 0,
+        destination_filter: str = "",
+        calls_type: int = 0,
+        call_time_filter_type: int = 0,
+        call_time_filter_from: Optional[datetime] = None,
+        call_time_filter_to: Optional[datetime] = None,
+        hide_pcalls: bool = False,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        """Call log from the archived (pre-migration) CDR tables."""
+        tf_from = call_time_filter_from or start
+        tf_to = call_time_filter_to or end
+        path = (
+            f"/ReportCallLogData/Pbx.GetOldCallLogData("
+            f"periodFrom={_fmt_dt(start)},periodTo={_fmt_dt(end)},"
+            f"sourceType={source_type},sourceFilter='{source_filter}',"
+            f"destinationType={destination_type},destinationFilter='{destination_filter}',"
+            f"callsType={calls_type},callTimeFilterType={call_time_filter_type},"
+            f"callTimeFilterFrom={_fmt_dt(tf_from)},callTimeFilterTo={_fmt_dt(tf_to)},"
+            f"hidePcalls={_b(hide_pcalls)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def get_call_quality_report(
+        self,
+        cdr_id: str,
+        src_number: str,
+        dst_number: str,
+        src_caller_id: Optional[str] = None,
+        dst_caller_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        path = (
+            f"/ReportCallLogData/Pbx.GetCallQualityReport("
+            f"cdrId='{cdr_id}',srcNumber='{src_number}',dstNumber='{dst_number}',"
+            f"srcCallerId={_s(src_caller_id)},dstCallerId={_s(dst_caller_id)})"
+        )
+        return self._get(path)
+
+    def get_old_call_quality_report(
+        self,
+        call_id: int,
+        src_number: str,
+        dst_number: str,
+        src_caller_id: Optional[str] = None,
+        dst_caller_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        path = (
+            f"/ReportCallLogData/Pbx.GetOldCallQualityReport("
+            f"call_id={call_id},srcNumber='{src_number}',dstNumber='{dst_number}',"
+            f"srcCallerId={_s(src_caller_id)},dstCallerId={_s(dst_caller_id)})"
+        )
+        return self._get(path)
+
     # ------------------------------------------------------------------
     # Extension statistics
     # ------------------------------------------------------------------
@@ -677,3 +738,576 @@ class ReportsService(BaseService):
 
     def delete_scheduled_report(self, report_id: int) -> None:
         self._delete(f"/ScheduledReports({report_id})")
+
+    # ------------------------------------------------------------------
+    # Download variants
+    #
+    # Same payloads as the matching get_* methods; 3CX exposes them as the
+    # export/CSV entry points used by the management console.
+    # ------------------------------------------------------------------
+
+    def download_abandoned_chats_statistics(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        participant_type: int,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportAbandonedChatsStatistics/Pbx.DownloadAbandonedChatsStatistics("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"participantType={participant_type},clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_abandoned_queue_calls(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        queue_dns: Optional[str],
+        wait_interval: Optional[str],
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportAbandonedQueueCalls/Pbx.DownloadAbandonedQueueCalls("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"queueDns={_s(queue_dns)},waitInterval={_s(wait_interval)},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_agent_login_history(
+        self,
+        client_time_zone: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        queue_dn_str: Optional[str],
+        agent_dn_str: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportAgentLoginHistory/Pbx.DownloadAgentLoginHistory("
+            f"clientTimeZone={_s(client_time_zone)},startDt={_fmt_dt(start_dt)},"
+            f"endDt={_fmt_dt(end_dt)},queueDnStr={_s(queue_dn_str)},agentDnStr={_s(agent_dn_str)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_agents_in_queue_statistics(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportAgentsInQueueStatistics/Pbx.DownloadAgentsInQueueStatistics("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_audit_log(
+        self,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportAuditLog/Pbx.DownloadAuditLog("
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_average_queue_waiting_time_report(
+        self,
+        chart_date: datetime,
+        chart_by: Optional[str],
+        queue_dn_str: Optional[str],
+        wait_interval: Optional[str],
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportAverageQueueWaitingTime/Pbx.DownloadAverageQueueWaitingTimeReport("
+            f"chartDate={_fmt_dt(chart_date)},chartBy={_s(chart_by)},"
+            f"queueDnStr={_s(queue_dn_str)},waitInterval={_s(wait_interval)},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_breaches_sla(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        wait_interval: Optional[str],
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportBreachesSla/Pbx.DownloadBreachesSla("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"waitInterval={_s(wait_interval)},clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_call_cost_by_extension_group(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        group_filter: Optional[str],
+        call_class: int,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportCallCostByExtensionGroup/Pbx.DownloadCallCostByExtensionGroup("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"groupFilter={_s(group_filter)},callClass={call_class},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_call_distribution(
+        self,
+        client_time_zone: Optional[str],
+        period_from: datetime,
+        period_to: datetime,
+        group_number: Optional[str],
+        extension_dns: Optional[str],
+        wait_interval: Optional[str],
+        include_queue_calls: bool,
+        call_area: int,
+        grouping_type: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportCallDistribution/Pbx.DownloadGetGetCallDistribution("
+            f"clientTimeZone={_s(client_time_zone)},periodFrom={_fmt_dt(period_from)},"
+            f"periodTo={_fmt_dt(period_to)},groupNumber={_s(group_number)},"
+            f"extensionDns={_s(extension_dns)},waitInterval={_s(wait_interval)},"
+            f"includeQueueCalls={_b(include_queue_calls)},callArea={call_area},"
+            f"groupingType={grouping_type})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_call_log(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        source_type: int,
+        source_filter: Optional[str],
+        destination_type: int,
+        destination_filter: Optional[str],
+        calls_type: int,
+        call_time_filter_type: int,
+        call_time_filter_from: Optional[str],
+        call_time_filter_to: Optional[str],
+        hide_pcalls: bool,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportCallLogData/Pbx.DownloadCallLog("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"sourceType={source_type},sourceFilter={_s(source_filter)},"
+            f"destinationType={destination_type},destinationFilter={_s(destination_filter)},"
+            f"callsType={calls_type},callTimeFilterType={call_time_filter_type},"
+            f"callTimeFilterFrom={_s(call_time_filter_from)},"
+            f"callTimeFilterTo={_s(call_time_filter_to)},hidePcalls={_b(hide_pcalls)},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_chat_log(
+        self,
+        client_time_zone: Optional[str],
+        period_from: datetime,
+        period_to: datetime,
+        from_type: int,
+        from_extension: Optional[str],
+        from_text: Optional[str],
+        to_type: int,
+        to_extension: Optional[str],
+        to_text: Optional[str],
+        chat_type: int,
+        participant_type: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportChatLog/Pbx.DownloadChatLog("
+            f"clientTimeZone={_s(client_time_zone)},periodFrom={_fmt_dt(period_from)},"
+            f"periodTo={_fmt_dt(period_to)},fromType={from_type},"
+            f"fromExtension={_s(from_extension)},fromText={_s(from_text)},toType={to_type},"
+            f"toExtension={_s(to_extension)},toText={_s(to_text)},chatType={chat_type},"
+            f"participantType={participant_type})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_detailed_queue_statistics(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportDetailedQueueStatistics/Pbx.DownloadDetailedQueueStatistics("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_extension_statistics(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        extension_filter: Optional[str],
+        call_area: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportExtensionStatistics/Pbx.DownloadExtensionStatistics("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"extensionFilter={_s(extension_filter)},callArea={call_area})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_extension_statistics_by_group(
+        self,
+        group_number: Optional[str],
+        period_from: datetime,
+        period_to: datetime,
+        call_area: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportExtensionStatisticsByGroup/Pbx.DownloadExtensionStatisticsByGroup("
+            f"groupNumber={_s(group_number)},periodFrom={_fmt_dt(period_from)},"
+            f"periodTo={_fmt_dt(period_to)},callArea={call_area})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_extensions_statistics_by_ring_groups(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        ring_group_dns: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportExtensionsStatisticsByRingGroups/Pbx.DownloadExtensionsStatisticsByRingGroups("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"ringGroupDns={_s(ring_group_dns)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_inbound_calls(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        trunk_dns: Optional[str],
+        calls_type: int,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportInboundCalls/Pbx.DownloadGetInboundCalls("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"trunkDns={_s(trunk_dns)},callsType={calls_type},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_inbound_rules(
+        self,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = "/ReportInboundRules/Pbx.DownloadInboundRules()"
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_outbound_calls(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        trunk_dns: Optional[str],
+        calls_type: int,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportOutboundCalls/Pbx.DownloadGetOutboundCalls("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"trunkDns={_s(trunk_dns)},callsType={calls_type},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_agents_chat_statistics(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        participant_type: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueAgentsChatStatistics/Pbx.DownloadQueueAgentsChatStatistics("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"participantType={participant_type})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_agents_chat_statistics_totals(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        participant_type: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueAgentsChatStatisticsTotals/Pbx.DownloadQueueAgentsChatStatisticsTotals("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"participantType={participant_type})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_an_un_calls_report(
+        self,
+        chart_date: datetime,
+        chart_by: Optional[str],
+        queue_dn_str: Optional[str],
+        client_time_zone: Optional[str],
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueAnUnCalls/Pbx.DownloadQueueAnUnCallsReport("
+            f"chartDate={_fmt_dt(chart_date)},chartBy={_s(chart_by)},"
+            f"queueDnStr={_s(queue_dn_str)},clientTimeZone={_s(client_time_zone)},"
+            f"waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_answered_calls_by_wait_time(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        answer_interval: Optional[str],
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueAnsweredCallsByWaitTime/Pbx.DownloadQueueAnsweredCallsByWaitTime("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"answerInterval={_s(answer_interval)},clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_callbacks(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueCallbacks/Pbx.DownloadQueueCallbacks("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_chat_performance(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        participant_type: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueChatPerformance/Pbx.DownloadQueueChatPerformance("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"participantType={participant_type})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_failed_callbacks(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        client_time_zone: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueueFailedCallbacks/Pbx.DownloadQueueFailedCallbacks("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"clientTimeZone={_s(client_time_zone)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_performance_overview(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        queue_dns: Optional[str],
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueuePerformanceOverview/Pbx.DownloadQueuePerformanceOverview("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"queueDns={_s(queue_dns)},waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_queue_performance_totals(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        queue_dns: Optional[str],
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportQueuePerformanceTotals/Pbx.DownloadQueuePerformanceTotals("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"queueDns={_s(queue_dns)},waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_ring_group_statistics(
+        self,
+        period_from: datetime,
+        period_to: datetime,
+        ring_group_dns: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportRingGroupStatistics/Pbx.DownloadRingGroupStatistics("
+            f"periodFrom={_fmt_dt(period_from)},periodTo={_fmt_dt(period_to)},"
+            f"ringGroupDns={_s(ring_group_dns)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_statistic_sla(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportStatisticSla/Pbx.DownloadStatisticSla("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_team_queue_general_statistics(
+        self,
+        queue_dn_str: Optional[str],
+        start_dt: datetime,
+        end_dt: datetime,
+        wait_interval: Optional[str],
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportTeamQueueGeneralStatistics/Pbx.DownloadTeamQueueGeneralStatistics("
+            f"queueDnStr={_s(queue_dn_str)},startDt={_fmt_dt(start_dt)},endDt={_fmt_dt(end_dt)},"
+            f"waitInterval={_s(wait_interval)})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)
+
+    def download_user_activity(
+        self,
+        client_time_zone: Optional[str],
+        period_from: datetime,
+        period_to: datetime,
+        group_number: Optional[str],
+        extension_dns: Optional[str],
+        wait_interval: Optional[str],
+        include_queue_calls: bool,
+        call_area: int,
+        grouping_type: int,
+        *,
+        query: Optional[ODataQuery] = None,
+    ) -> List[Dict[str, Any]]:
+        path = (
+            f"/ReportUserActivity/Pbx.DownloadGetUserActivity("
+            f"clientTimeZone={_s(client_time_zone)},periodFrom={_fmt_dt(period_from)},"
+            f"periodTo={_fmt_dt(period_to)},groupNumber={_s(group_number)},"
+            f"extensionDns={_s(extension_dns)},waitInterval={_s(wait_interval)},"
+            f"includeQueueCalls={_b(include_queue_calls)},callArea={call_area},"
+            f"groupingType={grouping_type})"
+        )
+        data = self._get(path, params=self._query_params(query))
+        return self._list_values(data)

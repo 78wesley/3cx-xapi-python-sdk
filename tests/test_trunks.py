@@ -4,10 +4,9 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, api
+from tests.conftest import TOKEN_JSON, TOKEN_URL, api
 from threecx import ThreeCXClient
 from threecx.models.trunks import Trunk
-
 
 TRUNK_1 = {"Id": 1, "Number": "100", "AuthID": "carrier-auth", "SimultaneousCalls": 8, "IsOnline": True}
 PEER_1 = {"Id": 1, "Name": "PSTN GW", "Number": "200"}
@@ -64,9 +63,9 @@ def test_list_peers(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     assert peers[0].number == "200"
 
 
-def test_get_peer(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
-    httpx_mock.add_response(url=api("/Peers(1)"), json=PEER_1)
-    p = client.trunks.get_peer(1)
+def test_get_peer_by_number(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(url=api("/Peers(Number='10')"), json=PEER_1)
+    p = client.trunks.get_peer_by_number("10")
     assert p.name == "PSTN GW"
 
 

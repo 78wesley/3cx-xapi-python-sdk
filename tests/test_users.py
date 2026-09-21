@@ -4,12 +4,15 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from tests.conftest import TOKEN_URL, TOKEN_JSON, api
+from tests.conftest import TOKEN_JSON, TOKEN_URL, api
 from threecx import ThreeCXClient
 from threecx.models.users import User
 from threecx.odata import ODataQuery
 
-USER_1 = {"Id": 101, "Number": "100", "FirstName": "Alice", "LastName": "Smith", "EmailAddress": "alice@x.com", "Enabled": True}
+USER_1 = {
+    "Id": 101, "Number": "100", "FirstName": "Alice", "LastName": "Smith",
+    "EmailAddress": "alice@x.com", "Enabled": True,
+}
 USER_2 = {"Id": 102, "Number": "101", "FirstName": "Bob", "LastName": "Jones", "Enabled": True}
 
 
@@ -187,22 +190,28 @@ def test_send_welcome_email(client: ThreeCXClient, httpx_mock: HTTPXMock) -> Non
 
 def test_make_call(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
-        url=api("/Users(101)/Pbx.MakeCall"),
+        url=api("/Users/Pbx.MakeCall"),
         method="POST",
-        match_json={"Destination": "0031612345678"},
-        status_code=204,
+        match_json={
+            "destination": "0031612345678",
+            "dn": "101",
+            "contact": None,
+            "testCall": False,
+        },
+        json={"FinalStatus": "Connected", "Reason": "", "ReasonText": ""},
     )
-    client.users.make_call(101, "0031612345678")
+    result = client.users.make_call("0031612345678", dn="101")
+    assert result["FinalStatus"] == "Connected"
 
 
 def test_batch_delete(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url=api("/Users/Pbx.BatchDelete"),
         method="POST",
-        match_json={"userIds": [101, 102]},
-        status_code=204,
+        match_json={"ids": [101, 102]},
+        json={"value": []},
     )
-    client.users.batch_delete([101, 102])
+    assert client.users.batch_delete([101, 102]) == []
 
 
 def test_get_first_available_extension(client: ThreeCXClient, httpx_mock: HTTPXMock) -> None:

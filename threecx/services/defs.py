@@ -41,6 +41,9 @@ class DefsService(BaseService):
         result = self._post("/Defs/Pbx.GetRoutes", json=data)
         return self._list_values(result) if isinstance(result, dict) else result
 
+    def report_log_event(self, data: Dict[str, Any]) -> None:
+        self._post("/Defs/Pbx.ReportLogEvent", json={"request": data})
+
     def send_email(self, data: Dict[str, Any]) -> None:
         self._post("/Defs/Pbx.SendEmail", json=data)
 

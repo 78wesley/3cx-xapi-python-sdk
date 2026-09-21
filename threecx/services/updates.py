@@ -25,18 +25,12 @@ class UpdatesService(BaseService):
     def get_server_crm_updates(self) -> Dict[str, Any]:
         return self._get("/GetServerCrmUpdates()")
 
-    def get_client_crm_updates(self) -> Dict[str, Any]:
-        return self._get("/GetClientCrmUpdates()")
+    def install_updates(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return self._post("/InstallUpdates", json=data)
 
-    def install_updates(self, data: Dict[str, Any]) -> None:
-        self._post("/InstallUpdates", json=data)
-
-    def upgrade_debian(self, data: Dict[str, Any]) -> None:
-        self._post("/UpgradeDebian", json=data)
-
-    def has_debian_upgrade(self) -> bool:
-        data = self._get("/HasDebianUpgrade()")
-        return bool(data.get("value", data))
+    def get_update_details(self, key: str, update_id: str) -> str:
+        data = self._get(f"/GetUpdateDetails(key={key},id={update_id})")
+        return str(data.get("value", ""))
 
     def purge_calls(self, data: Dict[str, Any]) -> None:
         self._post("/PurgeCalls", json=data)

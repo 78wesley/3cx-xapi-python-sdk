@@ -125,8 +125,11 @@ class IntegrationsService(BaseService):
     def update_ai_settings(self, data: Dict[str, Any]) -> None:
         self._patch("/AISettings", json=data)
 
-    def get_ai_resources(self) -> Dict[str, Any]:
-        return self._get("/AISettings/Pbx.GetAIResources()")
+    def get_ai_resources(self, provider: str) -> Dict[str, Any]:
+        return self._get(f"/AISettings/Pbx.GetAIResources(provider='{provider}')")
+
+    def get_current_ai_resources(self) -> Dict[str, Any]:
+        return self._get("/AISettings/Pbx.GetCurrentAIResources()")
 
     def get_ai_template_contents(self, template_id: str) -> str:
         data = self._get(f"/AISettings/Pbx.GetAITemplateContents(id='{template_id}')")
@@ -158,3 +161,7 @@ class IntegrationsService(BaseService):
 
     def add_vector_store_files(self, data: Dict[str, Any]) -> None:
         self._post("/AISettings/Pbx.AddVectorStoreFiles", json=data)
+
+    def batch_delete_files(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        result = self._post("/AISettings/Pbx.BatchDeleteFiles", json=data)
+        return self._list_values(result)

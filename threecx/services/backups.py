@@ -45,6 +45,10 @@ class BackupsService(BaseService):
     def set_repository_settings(self, data: Dict[str, Any]) -> None:
         self._post(f"{self._PATH}/Pbx.SetBackupRepositorySettings", json=data)
 
+    def get_sftp_host_key(self, sftp_path: str) -> str:
+        data = self._post(f"{self._PATH}/Pbx.GetSftpHostKey", json={"sftpPath": sftp_path})
+        return str(data.get("value", ""))
+
     def get_restore_settings(self) -> Dict[str, Any]:
         return self._get(f"{self._PATH}/Pbx.GetRestoreSettings()")
 

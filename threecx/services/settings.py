@@ -118,6 +118,9 @@ class SettingsService(BaseService):
         data = self._get("/ConferenceSettings/Pbx.GetMCURows()")
         return self._list_values(data) if isinstance(data, dict) else data
 
+    def get_mcu_row(self, guid: str) -> Dict[str, Any]:
+        return self._get(f"/ConferenceSettings/Pbx.GetMCURow(guid='{guid}')")
+
     def update_mcu_request_status(self, data: Dict[str, Any]) -> None:
         self._post("/ConferenceSettings/Pbx.UpdateMCURequestStatus", json=data)
 
@@ -209,6 +212,12 @@ class SettingsService(BaseService):
 
     def update_hotel_services(self, data: Dict[str, Any]) -> None:
         self._patch("/HotelServices", json=data)
+
+    def assign_hotel_room(self, user_id: int, guest: Dict[str, Any]) -> None:
+        self._post(f"/HotelRooms({user_id})/Pbx.Assign", json={"guest": guest})
+
+    def clear_hotel_room(self, user_id: int) -> None:
+        self._post(f"/HotelRooms({user_id})/Pbx.Clear")
 
     # ------------------------------------------------------------------
     # Network settings

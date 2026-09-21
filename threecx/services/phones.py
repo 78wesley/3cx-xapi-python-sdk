@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterator, List, Optional
 
-from ..models.phones import DeviceInfo, Firmware, Fxs, FxsTemplate, Phone, PhoneTemplate, SipDevice
+from ..models.phones import DeviceInfo, Firmware, Fxs, FxsTemplate, PhoneTemplate, SipDevice
 from ..odata import ODataQuery
 from .base import BaseService
 
 
 class PhonesService(BaseService):
-    _PHONES = "/Phones"
     _TEMPLATES = "/PhoneTemplates"
     _SIP_DEVICES = "/SipDevices"
     _FXS = "/Fxs"
@@ -16,28 +15,6 @@ class PhonesService(BaseService):
     _DEVICE_INFOS = "/DeviceInfos"
     _FIRMWARES = "/Firmwares"
     _PHONE_LOGOS = "/PhoneLogos"
-
-    # ------------------------------------------------------------------
-    # Phones
-    # ------------------------------------------------------------------
-
-    def list(self, query: Optional[ODataQuery] = None) -> List[Phone]:
-        data = self._list_raw(self._PHONES, query)
-        return [Phone.model_validate(item) for item in data.get("value", [])]
-
-    def iterate(self, query: Optional[ODataQuery] = None) -> Iterator[Phone]:
-        yield from self._paginate(self._PHONES, Phone, query)
-
-    def get(self, phone_id: int, query: Optional[ODataQuery] = None) -> Phone:
-        data = self._get(f"{self._PHONES}({phone_id})", params=self._query_params(query))
-        return Phone.model_validate(data)
-
-    def update(self, phone_id: int, changes: Phone | Dict[str, Any]) -> None:
-        payload = changes.model_dump(by_alias=True, exclude_none=True) if isinstance(changes, Phone) else changes
-        self._patch(f"{self._PHONES}({phone_id})", json=payload)
-
-    def delete(self, phone_id: int, etag: Optional[str] = None) -> None:
-        self._delete(f"{self._PHONES}({phone_id})", etag=etag)
 
     # ------------------------------------------------------------------
     # Phone templates
@@ -57,7 +34,11 @@ class PhonesService(BaseService):
         return PhoneTemplate.model_validate(data)
 
     def update_template(self, template_id: int, changes: PhoneTemplate | Dict[str, Any]) -> None:
-        payload = changes.model_dump(by_alias=True, exclude_none=True) if isinstance(changes, PhoneTemplate) else changes
+        payload = (
+            changes.model_dump(by_alias=True, exclude_none=True)
+            if isinstance(changes, PhoneTemplate)
+            else changes
+        )
         self._patch(f"{self._TEMPLATES}({template_id})", json=payload)
 
     def delete_template(self, template_id: int) -> None:
@@ -81,8 +62,23 @@ class PhonesService(BaseService):
         data = self._list_raw(self._SIP_DEVICES, query)
         return [SipDevice.model_validate(item) for item in data.get("value", [])]
 
-    def push_sip_firmware(self, device_id: int) -> None:
-        self._post(f"{self._SIP_DEVICES}({device_id})/Pbx.PushFirmware")
+    def iterate_sip_devices(self, query: Optional[ODataQuery] = None) -> Iterator[SipDevice]:
+        yield from self._paginate(self._SIP_DEVICES, SipDevice, query)
+
+    def push_sip_firmware(self, device_id: int, data: Optional[Dict[str, Any]] = None) -> None:
+        self._post(f"{self._SIP_DEVICES}({device_id})/Pbx.PushFirmware", json=data)
+
+    def clear_sip_firmware(self, device_id: int, data: Dict[str, Any]) -> None:
+        self._post(f"{self._SIP_DEVICES}({device_id})/Pbx.ClearFirmware", json=data)
+
+    def move_phone(self, device_id: int, data: Dict[str, Any]) -> None:
+        self._post(f"{self._SIP_DEVICES}({device_id})/Pbx.MovePhone", json=data)
+
+    def bulk_switch_firmware(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return self._post(f"{self._SIP_DEVICES}/Pbx.BulkSwitchFirmware", json=data)
+
+    def bulk_update_firmware(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        return self._post(f"{self._SIP_DEVICES}/Pbx.BulkUpdateFirmware", json=data)
 
     # ------------------------------------------------------------------
     # FXS devices
@@ -169,6 +165,9 @@ class PhonesService(BaseService):
 
     def get_firmware_state(self) -> Dict[str, Any]:
         return self._get(f"{self._FIRMWARES}/Pbx.GetFirmwareState()")
+
+    def set_firmware_as_default(self, firmware_id: str, value: bool = True) -> None:
+        self._post(f"{self._FIRMWARES}({firmware_id})/Pbx.SetAsDefault", json={"value": value})
 
     def push_firmware_for_phones(self, firmware_id: str, data: Dict[str, Any]) -> None:
         self._post(f"{self._FIRMWARES}('{firmware_id}')/Pbx.PushFirmwareForPhones", json=data)

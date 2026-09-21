@@ -101,6 +101,24 @@ class SecurityService(BaseService):
         self._post("/Blocklist/Pbx.BulkIpsDelete", json=data)
 
     # ------------------------------------------------------------------
+    # OAuth clients
+    # ------------------------------------------------------------------
+
+    def list_oauth_clients(self, query: Optional[ODataQuery] = None) -> List[Dict[str, Any]]:
+        data = self._list_raw("/OAuthClients", query)
+        return self._list_values(data)
+
+    def get_oauth_client(self, client_id: str, query: Optional[ODataQuery] = None) -> Dict[str, Any]:
+        return self._get(f"/OAuthClients({client_id})", params=self._query_params(query))
+
+    def delete_oauth_client(self, client_id: str, etag: Optional[str] = None) -> None:
+        self._delete(f"/OAuthClients({client_id})", etag=etag)
+
+    def refresh_oauth_client_metadata(self, client_id: str) -> bool:
+        data = self._post(f"/OAuthClients({client_id})/Pbx.RefreshClientMetadata")
+        return bool(data.get("value", False))
+
+    # ------------------------------------------------------------------
     # Anti-hacking settings
     # ------------------------------------------------------------------
 
